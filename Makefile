@@ -3,7 +3,7 @@
 UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export UV_CACHE_DIR
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data gate-2
 
 help:
 	@echo "Available targets:"
@@ -15,6 +15,9 @@ help:
 	@echo "  test          Run ML, API, and frontend tests"
 	@echo "  build         Validate the API import and build the frontend"
 	@echo "  smoke         Build and test the Docker Compose stack"
+	@echo "  data-manifest Record local raw-data checksums (requires RETRIEVED_AT=YYYY-MM-DD)"
+	@echo "  audit-data    Audit the complete local CIC-IDS2017 CSV dataset"
+	@echo "  gate-2        Run Phase 2 checks, including the complete local data audit"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -32,6 +35,7 @@ format-check:
 
 lint:
 	python3 -B scripts/validate_phase0.py
+	python3 -B scripts/validate_phase2.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -57,7 +61,19 @@ build:
 smoke:
 	bash scripts/smoke.sh
 
+data-manifest:
+	@test -n "$(RETRIEVED_AT)" || (echo "Set RETRIEVED_AT=YYYY-MM-DD to the archive retrieval date"; exit 2)
+	PYTHONPATH=ml/src uv run python -m ids_ml.data.cli manifest --raw-dir data/raw/cic-ids2017/MachineLearningCVE --catalog data/source_catalog.json --retrieved-at "$(RETRIEVED_AT)" --output data/raw/cic-ids2017/manifest.json
+
+audit-data:
+	PYTHONPATH=ml/src uv run python -m ids_ml.data.cli audit --raw-dir data/raw/cic-ids2017/MachineLearningCVE --catalog data/source_catalog.json --manifest data/raw/cic-ids2017/manifest.json --labels contracts/labels-v1.json --json-output reports/generated/data-audit.json --markdown-output reports/generated/data-audit.md
+
+gate-2:
+	python3 -B scripts/validate_phase2.py
+	uv run pytest ml/tests/test_data_audit.py
+	$(MAKE) audit-data
+
 clean:
-	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage test-results playwright-report .playwright-mcp .taste-skill
+	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage reports/generated test-results playwright-report .playwright-mcp .taste-skill
 	find backend ml scripts -type d -name __pycache__ -prune -exec rm -rf {} +
 	find backend ml scripts -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete

@@ -36,6 +36,5 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["backend", "ml/src", "scripts/validate_phase0.py"]
+files = ["backend", "ml/src", "scripts"]
 exclude = ["frontend", ".venv"]
-

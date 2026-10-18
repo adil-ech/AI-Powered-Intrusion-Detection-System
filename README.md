@@ -12,6 +12,19 @@ A full-stack machine-learning project that will classify network-flow records as
 
 No intrusion model is loaded yet. `/ready` intentionally returns `503` until a verified artifact is introduced in Phase 5.
 
+## Dataset audit
+
+Phase 2 uses the eight machine-learning CSV files from CIC-IDS2017. Follow the verified acquisition, citation, checksum, and extraction procedure in [the dataset guide](docs/data/cic-ids2017.md). Raw data and generated reports stay local and are ignored by Git.
+
+After extracting the archive:
+
+```bash
+make data-manifest RETRIEVED_AT=YYYY-MM-DD
+make audit-data
+```
+
+The audit streams the full dataset, verifies every file checksum, inventories labels and schemas, and measures missing, non-finite, constant, and duplicate data without loading all rows into memory.
+
 ## Prerequisites
 
 Choose either:
@@ -89,4 +102,3 @@ The full CIC-IDS2017 dataset and generated model artifacts are intentionally exc
 ## License
 
 MIT. See [LICENSE](LICENSE).
-

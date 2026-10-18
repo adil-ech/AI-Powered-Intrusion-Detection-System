@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "dataset": "CIC-IDS2017",
+  "archive_name": "MachineLearningCSV.zip",
+  "source_url": "https://www.unb.ca/cic/datasets/ids-2017.html",
+  "captures": [
+    {
+      "id": "monday",
+      "capture_date": "2017-07-03",
+      "description": "Normal activity",
+      "filename_token_groups": [["monday"]],
+      "expected_labels": ["BENIGN"]
+    },
+    {
+      "id": "tuesday",
+      "capture_date": "2017-07-04",
+      "description": "FTP and SSH brute force",
+      "filename_token_groups": [["tuesday"]],
+      "expected_labels": ["BENIGN", "FTP_PATATOR", "SSH_PATATOR"]
+    },
+    {
+      "id": "wednesday",
+      "capture_date": "2017-07-05",
+      "description": "DoS and Heartbleed",
+      "filename_token_groups": [["wednesday"]],
+      "expected_labels": [
+        "BENIGN",
+        "DOS_SLOWLORIS",
+        "DOS_SLOWHTTPTEST",
+        "DOS_HULK",
+        "DOS_GOLDENEYE",
+        "HEARTBLEED"
+      ]
+    },
+    {
+      "id": "thursday_morning",
+      "capture_date": "2017-07-06",
+      "description": "Web attacks",
+      "filename_token_groups": [["thursday"], ["morning"], ["webattacks"]],
+      "expected_labels": [
+        "BENIGN",
+        "WEB_ATTACK_BRUTE_FORCE",
+        "WEB_ATTACK_XSS",
+        "WEB_ATTACK_SQL_INJECTION"
+      ]
+    },
+    {
+      "id": "thursday_afternoon",
+      "capture_date": "2017-07-06",
+      "description": "Infiltration",
+      "filename_token_groups": [
+        ["thursday"],
+        ["afternoon"],
+        ["infilteration", "infiltration"]
+      ],
+      "expected_labels": ["BENIGN", "INFILTRATION"]
+    },
+    {
+      "id": "friday_morning",
+      "capture_date": "2017-07-07",
+      "description": "Botnet",
+      "filename_token_groups": [["friday"], ["morning"]],
+      "expected_labels": ["BENIGN", "BOT"]
+    },
+    {
+      "id": "friday_port_scan",
+      "capture_date": "2017-07-07",
+      "description": "Port scan",
+      "filename_token_groups": [["friday"], ["afternoon"], ["portscan"]],
+      "expected_labels": ["BENIGN", "PORTSCAN"]
+    },
+    {
+      "id": "friday_ddos",
+      "capture_date": "2017-07-07",
+      "description": "DDoS",
+      "filename_token_groups": [["friday"], ["afternoon"], ["ddos"]],
+      "expected_labels": ["BENIGN", "DDOS"]
+    }
+  ]
+}
