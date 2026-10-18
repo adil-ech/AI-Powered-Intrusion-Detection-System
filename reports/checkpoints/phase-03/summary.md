@@ -10,8 +10,8 @@
 - Split manifest SHA-256: `045d97e9680d83cce2d408d8f7d1b70e5dbb1ea9609245b896422313289d12ed`
 - Preprocessing state SHA-256: `e08baee54660d75047e3011350133b39940acdf43d6c8db27c717384158b465b`
 - Environment: macOS; Python 3.12.14 through uv 0.12.21; streaming standard-library CSV processing with temporary SQLite duplicate indexes
-- CI evidence: pending for this checkpoint commit
-- Decision: local Phase 3 gates passed; Phase 4 must not begin until this checkpoint is pushed and CI is green.
+- CI evidence: GitHub Actions `CI` run 39170250931 completed successfully for commit `93b3133`
+- Decision: Phase 3 is complete; Phase 4 may begin.
 
 ## Commands run
 
