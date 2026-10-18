@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "normalization": "uppercase_trim_non_alphanumeric_to_underscore",
+  "categories": [
+    {
+      "name": "BENIGN",
+      "binary_target": "benign",
+      "source_labels": ["BENIGN"]
+    },
+    {
+      "name": "DOS_DDOS",
+      "binary_target": "malicious",
+      "source_labels": [
+        "DDOS",
+        "DOS_GOLDENEYE",
+        "DOS_HULK",
+        "DOS_SLOWHTTPTEST",
+        "DOS_SLOWLORIS"
+      ]
+    },
+    {
+      "name": "PORT_SCAN",
+      "binary_target": "malicious",
+      "source_labels": ["PORTSCAN"]
+    },
+    {
+      "name": "BRUTE_FORCE",
+      "binary_target": "malicious",
+      "source_labels": ["FTP_PATATOR", "SSH_PATATOR"]
+    },
+    {
+      "name": "WEB_ATTACK",
+      "binary_target": "malicious",
+      "source_labels": [
+        "WEB_ATTACK_BRUTE_FORCE",
+        "WEB_ATTACK_SQL_INJECTION",
+        "WEB_ATTACK_XSS"
+      ]
+    },
+    {
+      "name": "BOTNET",
+      "binary_target": "malicious",
+      "source_labels": ["BOT"]
+    },
+    {
+      "name": "INFILTRATION",
+      "binary_target": "malicious",
+      "source_labels": ["INFILTRATION"]
+    },
+    {
+      "name": "RARE_OTHER",
+      "binary_target": "malicious",
+      "source_labels": ["HEARTBLEED"]
+    }
+  ]
+}

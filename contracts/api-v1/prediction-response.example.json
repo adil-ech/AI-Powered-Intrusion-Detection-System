@@ -1,0 +1,47 @@
+{
+  "request_id": "req_example_01",
+  "status": "COMPLETE",
+  "model": {
+    "name": "cicids2017-two-stage",
+    "version": "0.1.0-example",
+    "feature_schema_version": "1.0.0-example"
+  },
+  "summary": {
+    "total_rows": 2,
+    "valid_rows": 2,
+    "invalid_rows": 0,
+    "benign_rows": 1,
+    "suspicious_rows": 1,
+    "high_risk_rows": 1,
+    "category_counts": {
+      "BENIGN": 1,
+      "DOS_DDOS": 1
+    }
+  },
+  "predictions": [
+    {
+      "row_id": "1",
+      "is_suspicious": false,
+      "predicted_category": "BENIGN",
+      "malicious_probability": 0.04,
+      "category_confidence": null,
+      "confidence": 0.96,
+      "confidence_status": "OK",
+      "risk_level": "LOW",
+      "warnings": []
+    },
+    {
+      "row_id": "2",
+      "is_suspicious": true,
+      "predicted_category": "DOS_DDOS",
+      "malicious_probability": 0.96,
+      "category_confidence": 0.91,
+      "confidence": 0.8736,
+      "confidence_status": "OK",
+      "risk_level": "HIGH",
+      "warnings": []
+    }
+  ],
+  "row_errors": [],
+  "warnings": []
+}
