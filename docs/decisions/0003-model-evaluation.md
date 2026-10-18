@@ -16,7 +16,7 @@ Random Forest is the first production candidate. Dummy and logistic-regression m
 ## Split policy
 
 - Deduplicate before splitting.
-- Use capture/source groups, preferably capture day plus source file, to prevent related flows from crossing splits.
+- Use capture-day/source-anchored contiguous windows of 4,096 source rows as groups; keep each complete window in exactly one split. Whole-file/day groups are unsuitable for the first category model because CIC-IDS2017 places several attack families in only one capture, and the machine-learning archive omits the identifiers needed to reconstruct stronger host/session groups.
 - Maintain training, validation, and untouched final-test manifests.
 - Use validation data for hyperparameters, feature decisions, probability calibration, and threshold selection.
 - Use the final-test split once after the complete pipeline and taxonomy are frozen.
@@ -109,4 +109,3 @@ Required metadata includes:
 - Record training commands and reference hardware.
 - Test prediction parity before and after serialization.
 - Model-regression tests use the frozen sample and tolerances, not the full dataset in ordinary CI.
-

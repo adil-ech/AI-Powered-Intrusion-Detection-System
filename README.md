@@ -1,6 +1,6 @@
 # AI-Powered Intrusion Detection System
 
-A full-stack machine-learning project that will classify network-flow records as benign or suspicious and categorize supported attacks. The current verified milestone is the repository and toolchain foundation; dataset ingestion and model training begin in Phase 2.
+A full-stack machine-learning project that will classify network-flow records as benign or suspicious and categorize supported attacks. Dataset provenance and quality are verified, and the deterministic preprocessing pipeline now produces frozen model-ready inputs for baseline training.
 
 ## Current capabilities
 
@@ -9,6 +9,7 @@ A full-stack machine-learning project that will classify network-flow records as
 - Python and frontend formatting, linting, typing, and test commands.
 - Docker Compose development/demo stack.
 - Versioned product, data, model, and API contracts.
+- Streaming CIC-IDS2017 audit, global deduplication, grouped splits, and train-fitted preprocessing.
 
 No intrusion model is loaded yet. `/ready` intentionally returns `503` until a verified artifact is introduced in Phase 5.
 
@@ -24,6 +25,14 @@ make audit-data
 ```
 
 The audit streams the full dataset, verifies every file checksum, inventories labels and schemas, and measures missing, non-finite, constant, and duplicate data without loading all rows into memory.
+
+Build and verify the grouped train, validation, and untouched final-test inputs with:
+
+```bash
+make gate-3
+```
+
+See [the frozen preprocessing contract](docs/data/preprocessing-v1.md) for grouping, leakage controls, feature schema, and rare-class limitations.
 
 ## Prerequisites
 

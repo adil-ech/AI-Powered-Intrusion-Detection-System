@@ -1,0 +1,475 @@
+{
+  "dataset": "CIC-IDS2017",
+  "excluded_features": [
+    {
+      "name": "flow_id",
+      "reason": "Direct flow identifier"
+    },
+    {
+      "name": "source_ip",
+      "reason": "Lab-specific host identifier"
+    },
+    {
+      "name": "destination_ip",
+      "reason": "Lab-specific host identifier"
+    },
+    {
+      "name": "timestamp",
+      "reason": "Capture schedule and attack timing leakage"
+    },
+    {
+      "name": "source_port",
+      "reason": "Ephemeral or lab-specific endpoint identifier"
+    },
+    {
+      "name": "destination_port",
+      "reason": "Default schema excludes ports; validation-only experiment remains preregistered"
+    },
+    {
+      "name": "bwd_psh_flags",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "bwd_urg_flags",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "fwd_avg_bytes_bulk",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "fwd_avg_packets_bulk",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "fwd_avg_bulk_rate",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "bwd_avg_bytes_bulk",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "bwd_avg_packets_bulk",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "bwd_avg_bulk_rate",
+      "reason": "constant_in_training_split"
+    },
+    {
+      "name": "syn_flag_count",
+      "reason": "exact_duplicate_of:fwd_psh_flags"
+    },
+    {
+      "name": "cwe_flag_count",
+      "reason": "exact_duplicate_of:fwd_urg_flags"
+    },
+    {
+      "name": "avg_fwd_segment_size",
+      "reason": "exact_duplicate_of:fwd_packet_length_mean"
+    },
+    {
+      "name": "fwd_header_length_2",
+      "reason": "exact_duplicate_of:fwd_header_length"
+    },
+    {
+      "name": "subflow_fwd_packets",
+      "reason": "exact_duplicate_of:total_fwd_packets"
+    },
+    {
+      "name": "subflow_bwd_packets",
+      "reason": "exact_duplicate_of:total_backward_packets"
+    }
+  ],
+  "feature_schema_sha256": "35471c9144bcfe174a4d20e4122d3a673267cb5a7594b1283ae47224aa926152",
+  "feature_schema_version": "features-v1",
+  "features": [
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_duration"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "total_fwd_packets"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "total_backward_packets"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "total_length_of_fwd_packets"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "total_length_of_bwd_packets"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_packet_length_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_packet_length_min"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_packet_length_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_packet_length_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_packet_length_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_packet_length_min"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_packet_length_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_packet_length_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_bytes_s"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_packets_s"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_iat_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_iat_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_iat_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "flow_iat_min"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_iat_total"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_iat_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_iat_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_iat_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_iat_min"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_iat_total"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_iat_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_iat_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_iat_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_iat_min"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_psh_flags"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_urg_flags"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_header_length"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_header_length"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fwd_packets_s"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "bwd_packets_s"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "min_packet_length"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "max_packet_length"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "packet_length_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "packet_length_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "packet_length_variance"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "fin_flag_count"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "rst_flag_count"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "psh_flag_count"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "ack_flag_count"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "urg_flag_count"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "ece_flag_count"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "down_up_ratio"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "average_packet_size"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "avg_bwd_segment_size"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "subflow_fwd_bytes"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "subflow_bwd_bytes"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "init_win_bytes_forward"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "init_win_bytes_backward"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "act_data_pkt_fwd"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "min_seg_size_forward"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "active_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "active_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "active_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "active_min"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "idle_mean"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "idle_std"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "idle_max"
+    },
+    {
+      "dtype": "float64",
+      "missing_value_policy": "training_mean",
+      "name": "idle_min"
+    }
+  ],
+  "required_features": [
+    "flow_duration",
+    "total_fwd_packets",
+    "total_backward_packets",
+    "total_length_of_fwd_packets",
+    "total_length_of_bwd_packets",
+    "fwd_packet_length_max",
+    "fwd_packet_length_min",
+    "fwd_packet_length_mean",
+    "fwd_packet_length_std",
+    "bwd_packet_length_max",
+    "bwd_packet_length_min",
+    "bwd_packet_length_mean",
+    "bwd_packet_length_std",
+    "flow_bytes_s",
+    "flow_packets_s",
+    "flow_iat_mean",
+    "flow_iat_std",
+    "flow_iat_max",
+    "flow_iat_min",
+    "fwd_iat_total",
+    "fwd_iat_mean",
+    "fwd_iat_std",
+    "fwd_iat_max",
+    "fwd_iat_min",
+    "bwd_iat_total",
+    "bwd_iat_mean",
+    "bwd_iat_std",
+    "bwd_iat_max",
+    "bwd_iat_min",
+    "fwd_psh_flags",
+    "fwd_urg_flags",
+    "fwd_header_length",
+    "bwd_header_length",
+    "fwd_packets_s",
+    "bwd_packets_s",
+    "min_packet_length",
+    "max_packet_length",
+    "packet_length_mean",
+    "packet_length_std",
+    "packet_length_variance",
+    "fin_flag_count",
+    "rst_flag_count",
+    "psh_flag_count",
+    "ack_flag_count",
+    "urg_flag_count",
+    "ece_flag_count",
+    "down_up_ratio",
+    "average_packet_size",
+    "avg_bwd_segment_size",
+    "subflow_fwd_bytes",
+    "subflow_bwd_bytes",
+    "init_win_bytes_forward",
+    "init_win_bytes_backward",
+    "act_data_pkt_fwd",
+    "min_seg_size_forward",
+    "active_mean",
+    "active_std",
+    "active_max",
+    "active_min",
+    "idle_mean",
+    "idle_std",
+    "idle_max",
+    "idle_min"
+  ],
+  "schema_version": "1.0.0",
+  "transform": {
+    "fit_split": "train",
+    "imputation": "training_mean",
+    "non_finite_training_values": "replace_with_missing"
+  }
+}

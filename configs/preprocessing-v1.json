@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "dataset": "CIC-IDS2017",
+  "random_seed": 42,
+  "group_size_rows": 4096,
+  "split_basis_points": {
+    "train": 7000,
+    "validation": 1500,
+    "final_test": 1500
+  },
+  "excluded_features": {
+    "label": "Training target, never a model feature",
+    "flow_id": "Direct flow identifier",
+    "source_ip": "Lab-specific host identifier",
+    "destination_ip": "Lab-specific host identifier",
+    "timestamp": "Capture schedule and attack timing leakage",
+    "source_port": "Ephemeral or lab-specific endpoint identifier",
+    "destination_port": "Default schema excludes ports; validation-only experiment remains preregistered"
+  },
+  "imputation_strategy": "training_mean"
+}

@@ -7,7 +7,8 @@
 - Archive SHA-256: `c3f26274b36c837ccf28ffd2dbf4582941c30b3ee70a635c6e5b2f87c4727928`
 - Local manifest SHA-256: `736a62b381b9f7a1e254768527581a3b1da76d59e1c5fd2ccefe9537a98c5c3b`
 - Environment: macOS; Python 3.12.14 through uv 0.12.21; streaming standard-library CSV audit with a temporary SQLite duplicate index
-- Decision: Phase 2 is complete; Phase 3 may begin after this checkpoint commit is pushed and CI is green.
+- CI evidence: GitHub Actions `CI` run 39155019956 completed successfully for commit `300b2cd`
+- Decision: Phase 2 is complete; Phase 3 may begin.
 
 ## Commands run
 

@@ -71,3 +71,5 @@ The reports inventory source files, capture days, normalized columns, labels, cl
 - Remove constants and the repeated `fwd_header_length` column using training data only.
 - Fail on an unrecognized source label instead of assigning it to another category.
 - Resolve schema differences before preprocessing; never align columns by position.
+
+The implemented and frozen treatment is documented in [the `features-v1` preprocessing guide](preprocessing-v1.md).
