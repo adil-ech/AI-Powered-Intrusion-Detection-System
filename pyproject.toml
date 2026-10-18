@@ -1,0 +1,41 @@
+[project]
+name = "ai-powered-intrusion-detection-system"
+version = "0.1.0"
+description = "A full-stack machine-learning network-flow intrusion detection demo."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.119,<1",
+  "uvicorn[standard]>=0.37,<1",
+]
+
+[dependency-groups]
+dev = [
+  "httpx2>=2.14.0",
+  "mypy>=1.18,<2",
+  "pytest>=8.4,<10",
+  "ruff>=0.14,<1",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["backend/tests", "ml/tests"]
+pythonpath = [".", "ml/src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".venv", "frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["backend", "ml/src", "scripts/validate_phase0.py"]
+exclude = ["frontend", ".venv"]
+

@@ -7,11 +7,26 @@ import json
 import math
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
-
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+
+EXCLUDED_DIRECTORIES = {
+    ".cache",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".taste-skill",
+    ".venv",
+    "coverage",
+    "dist",
+    "node_modules",
+    "playwright-report",
+    "test-results",
+}
 
 REQUIRED_FILES = (
     "PROJECT_PLAN.md",
@@ -92,7 +107,7 @@ def validate_required_files(errors: list[str]) -> None:
 
 def iter_markdown_files() -> Iterable[Path]:
     for path in ROOT.rglob("*.md"):
-        if ".git" not in path.parts:
+        if not EXCLUDED_DIRECTORIES.intersection(path.parts):
             yield path
 
 
@@ -165,7 +180,8 @@ def validate_labels(errors: list[str]) -> None:
             if source_label in seen_labels:
                 fail(
                     errors,
-                    f"source label {source_label} maps to both {seen_labels[source_label]} and {name}",
+                    "source label "
+                    f"{source_label} maps to both {seen_labels[source_label]} and {name}",
                 )
             seen_labels[source_label] = str(name)
 
@@ -291,9 +307,7 @@ def validate_document_consistency(errors: list[str]) -> None:
         if f"`{field}`" not in api_text:
             fail(errors, f"API contract does not define prediction field {field}")
 
-    model_decision = (
-        ROOT / "docs/decisions/0003-model-evaluation.md"
-    ).read_text(encoding="utf-8")
+    model_decision = (ROOT / "docs/decisions/0003-model-evaluation.md").read_text(encoding="utf-8")
     for phrase in (
         "untouched final-test",
         "selected malicious threshold",
@@ -303,16 +317,14 @@ def validate_document_consistency(errors: list[str]) -> None:
         if phrase not in model_decision:
             fail(errors, f"model evaluation decision is missing required phrase: {phrase}")
 
-    label_decision = (
-        ROOT / "docs/decisions/0002-data-and-label-contract.md"
-    ).read_text(encoding="utf-8")
+    label_decision = (ROOT / "docs/decisions/0002-data-and-label-contract.md").read_text(
+        encoding="utf-8"
+    )
     for phrase in ("unrecognized training label is an error", "not an `UNKNOWN` category"):
         if phrase not in label_decision:
             fail(errors, f"data decision is missing required behavior: {phrase}")
 
-    scope_decision = (ROOT / "docs/decisions/0001-mvp-scope.md").read_text(
-        encoding="utf-8"
-    )
+    scope_decision = (ROOT / "docs/decisions/0001-mvp-scope.md").read_text(encoding="utf-8")
     for phrase in ("10 MiB", "10,000"):
         if phrase not in scope_decision or phrase not in api_text:
             fail(errors, f"scope and API contract do not both define: {phrase}")

@@ -2,7 +2,7 @@
 
 - Status: PASS
 - Date: 2026-10-18
-- Commit: Not available; this repository has no initial commit and no Git author identity is configured.
+- Commit: `653ed7d` (`phase 1`)
 - Verified content digest: `sha256:945a13fcdc1d339f657e108574a35669fe6b64213c124cec123c4bf3f7837e0f`
 - Environment: macOS; validation executed with system Python 3.9.6 using only the standard library
 - Decision: Phase 0 is complete; Phase 1 may begin in a later turn.
@@ -56,4 +56,4 @@ shasum -a 256 AGENTS.md PROJECT_PLAN.md IMPLEMENTATION_WORKFLOW.md docs/decision
 - The exact ordered feature manifest is derived from audited source headers and frozen in Phase 3. The derivation and API discovery rules are fixed now.
 - Exact dependency versions are intentionally locked in Phase 1; only major runtime and toolchain choices are fixed here.
 - Mermaid validation is structural because a Mermaid CLI is not installed yet. Phase 1 should add rendered documentation validation to CI.
-- The checkpoint is anchored by a SHA-256 content digest rather than a commit because this is an uncommitted, newly initialized repository. The initial project commit should be created once a Git author identity is configured.
+- The pushed commit title says `phase 1`, but its contents are the completed Phase 0 planning and contract checkpoint.

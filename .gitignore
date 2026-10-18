@@ -1,0 +1,47 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node and frontend build output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+playwright-report/
+test-results/
+
+# Local design and browser inspection output
+.taste-skill/
+.playwright-mcp/
+
+# Dataset and generated model artifacts
+data/raw/*
+!data/raw/README.md
+data/interim/*
+!data/interim/README.md
+data/processed/*
+!data/processed/README.md
+models/*
+!models/README.md
+
+# Generated reports and temporary files
+reports/generated/
+*.tmp
+*.log
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
