@@ -11,6 +11,7 @@ A full-stack machine-learning project that will classify network-flow records as
 - Versioned product, data, model, and API contracts.
 - Streaming CIC-IDS2017 audit, global deduplication, grouped splits, and train-fitted preprocessing.
 - Validation-only dummy and streaming logistic baselines with explicit class, error-rate, and calibration metrics.
+- Group-aware Random Forest selection, deterministic calibration, and integrity-checked artifact packaging.
 
 No intrusion model is loaded yet. `/ready` intentionally returns `503` until a verified artifact is introduced in Phase 5.
 
@@ -42,6 +43,14 @@ make gate-4
 ```
 
 The [baseline guide](docs/ml/baselines-v1.md) documents the metrics and the sealed final-test boundary.
+
+Tune the Random Forest candidates without opening final-test predictions with:
+
+```bash
+make model-selection-report
+```
+
+After the selection in `configs/model-selection-v1.json` is frozen, `make gate-5` creates or verifies the single versioned MVP artifact. See the [model-selection guide](docs/ml/model-selection-v1.md) and [model card](docs/model-card.md).
 
 ## Prerequisites
 

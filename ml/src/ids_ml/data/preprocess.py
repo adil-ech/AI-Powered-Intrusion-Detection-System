@@ -728,7 +728,7 @@ def _markdown_report(report: dict[str, object]) -> str:
             + (", ".join(selection["duplicate_features"]) or "none"),
             "- Imputer fit split: train",
             "- Port decision: destination_port remains excluded from features-v1; a "
-            "validation-only comparison remains preregistered for Phase 4.",
+            "validation-only comparison remains preregistered for Phase 5.",
             "",
             "## Leakage checks",
             "",

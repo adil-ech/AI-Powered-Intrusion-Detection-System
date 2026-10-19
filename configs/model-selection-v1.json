@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "model_version": "ids-rf-v1.0.0",
+  "random_seed": 42,
+  "batch_size": 8192,
+  "validation_folds": 3,
+  "calibration_method": "binary_platt_family_temperature",
+  "binary_candidates": [
+    {
+      "id": "rf-binary-compact",
+      "n_estimators": 40,
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "max_features": "sqrt",
+      "max_samples": 0.3
+    },
+    {
+      "id": "rf-binary-deep",
+      "n_estimators": 64,
+      "max_depth": 24,
+      "min_samples_leaf": 2,
+      "max_features": "sqrt",
+      "max_samples": 0.45
+    }
+  ],
+  "family_candidates": [
+    {
+      "id": "rf-family-compact",
+      "n_estimators": 48,
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "max_features": "sqrt",
+      "max_samples": 0.6
+    },
+    {
+      "id": "rf-family-deep",
+      "n_estimators": 80,
+      "max_depth": 26,
+      "min_samples_leaf": 1,
+      "max_features": "sqrt",
+      "max_samples": 0.8
+    }
+  ],
+  "threshold_search": {
+    "minimum": 0.01,
+    "maximum": 0.99,
+    "step": 0.005,
+    "objective": "maximize_recall_then_f1",
+    "maximum_false_positive_rate": 0.03
+  },
+  "acceptance": {
+    "minimum_binary_recall": 0.9,
+    "maximum_binary_false_positive_rate": 0.03,
+    "minimum_family_macro_f1": 0.75
+  },
+  "feature_variant_policy": {
+    "default": "without_destination_port",
+    "candidate": "with_destination_port",
+    "minimum_family_macro_f1_gain": 0.01,
+    "maximum_binary_f1_regression": 0.005,
+    "maximum_per_class_recall_regression": 0.05
+  },
+  "confidence_thresholds": {
+    "low_confidence": 0.65,
+    "high_risk": 0.85
+  },
+  "selection_frozen": true,
+  "frozen_selection": {
+    "feature_variant": "without_destination_port",
+    "binary_candidate": "rf-binary-compact",
+    "family_candidate": "rf-family-deep"
+  }
+}

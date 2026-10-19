@@ -3,7 +3,7 @@
 UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export UV_CACHE_DIR
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data baseline-report gate-2 gate-3 gate-4
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 ensure-baseline
 
 help:
 	@echo "Available targets:"
@@ -19,9 +19,13 @@ help:
 	@echo "  audit-data    Audit the complete local CIC-IDS2017 CSV dataset"
 	@echo "  preprocess-data  Build deterministic model-ready train/validation/test inputs"
 	@echo "  baseline-report  Train and evaluate Phase 4 baselines on validation data"
+	@echo "  port-variant  Build the same-row destination-port diagnostic"
+	@echo "  model-selection-report  Tune/calibrate/select without opening final test"
+	@echo "  finalize-model  Freeze the selected artifact and evaluate final test once"
 	@echo "  gate-2        Run Phase 2 checks, including the complete local data audit"
 	@echo "  gate-3        Run Phase 3 checks, including complete preprocessing"
 	@echo "  gate-4        Run Phase 4 checks, including the complete baseline report"
+	@echo "  gate-5        Run Phase 5 checks and verify/finalize the selected artifact"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -42,6 +46,7 @@ lint:
 	python3 -B scripts/validate_phase2.py
 	python3 -B scripts/validate_phase3.py
 	python3 -B scripts/validate_phase4.py
+	python3 -B scripts/validate_phase5.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -94,6 +99,23 @@ gate-4:
 	python3 -B scripts/validate_phase4.py
 	uv run pytest ml/tests/test_evaluation.py
 	$(MAKE) baseline-report
+
+ensure-baseline:
+	@test -f models/baselines/baselines-v1.joblib || $(MAKE) baseline-report
+
+port-variant:
+	PYTHONPATH=ml/src uv run python -m ids_ml.modeling.port_cli --raw-dir data/raw/cic-ids2017/MachineLearningCVE --catalog data/source_catalog.json --labels contracts/labels-v1.json --preprocessing-config configs/preprocessing-v1.json --base-processed-dir data/processed/phase3 --base-feature-contract contracts/features-v1.json --output-dir data/processed/phase5-with-port --report reports/generated/model-selection/port-variant.json
+
+model-selection-report: ensure-baseline port-variant
+	PYTHONPATH=ml/src uv run python -m ids_ml.modeling.cli --base-processed-dir data/processed/phase3 --port-processed-dir data/processed/phase5-with-port --feature-contract contracts/features-v1.json --labels contracts/labels-v1.json --baseline-artifact models/baselines/baselines-v1.joblib --config configs/model-selection-v1.json --artifact-dir models/ids-rf-v1 --json-output reports/generated/model-selection/model-selection-v1.json --markdown-output reports/generated/model-selection/model-selection-v1.md --calibration-svg reports/generated/model-selection/calibration.svg --selection-only
+
+finalize-model: ensure-baseline port-variant
+	PYTHONPATH=ml/src uv run python -m ids_ml.modeling.cli --base-processed-dir data/processed/phase3 --port-processed-dir data/processed/phase5-with-port --feature-contract contracts/features-v1.json --labels contracts/labels-v1.json --baseline-artifact models/baselines/baselines-v1.joblib --config configs/model-selection-v1.json --artifact-dir models/ids-rf-v1 --json-output reports/generated/model-selection/model-selection-v1.json --markdown-output reports/generated/model-selection/model-selection-v1.md --calibration-svg reports/generated/model-selection/calibration.svg --finalize
+
+gate-5:
+	python3 -B scripts/validate_phase5.py
+	uv run pytest ml/tests/test_modeling.py
+	$(MAKE) finalize-model
 
 clean:
 	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage reports/generated test-results playwright-report .playwright-mcp .taste-skill
