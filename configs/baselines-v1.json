@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "baseline_version": "baselines-v1",
+  "random_seed": 42,
+  "batch_size": 8192,
+  "binary_threshold": 0.5,
+  "binary_dummy_strategy": "training_prior",
+  "binary_logistic": {
+    "estimator": "SGDClassifier",
+    "loss": "log_loss",
+    "penalty": "l2",
+    "alpha": 0.0001,
+    "learning_rate": "optimal",
+    "average": true,
+    "shuffle": false,
+    "class_weighting": "balanced_from_training_support",
+    "epochs": 1
+  },
+  "attack_family_strategy": "training_prior",
+  "headline_split": "validation",
+  "final_test_policy": "sealed_not_evaluated"
+}

@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "fastapi>=0.119,<1",
+  "joblib>=1.5,<2",
+  "numpy>=2,<3",
+  "scikit-learn>=1.7,<2",
   "uvicorn[standard]>=0.37,<1",
 ]
 
@@ -38,3 +41,7 @@ python_version = "3.12"
 strict = true
 files = ["backend", "ml/src", "scripts"]
 exclude = ["frontend", ".venv"]
+
+[[tool.mypy.overrides]]
+module = ["joblib", "sklearn.*"]
+ignore_missing_imports = true

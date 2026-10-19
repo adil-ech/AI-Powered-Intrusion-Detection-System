@@ -3,7 +3,7 @@
 UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export UV_CACHE_DIR
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data gate-2 gate-3
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data baseline-report gate-2 gate-3 gate-4
 
 help:
 	@echo "Available targets:"
@@ -18,8 +18,10 @@ help:
 	@echo "  data-manifest Record local raw-data checksums (requires RETRIEVED_AT=YYYY-MM-DD)"
 	@echo "  audit-data    Audit the complete local CIC-IDS2017 CSV dataset"
 	@echo "  preprocess-data  Build deterministic model-ready train/validation/test inputs"
+	@echo "  baseline-report  Train and evaluate Phase 4 baselines on validation data"
 	@echo "  gate-2        Run Phase 2 checks, including the complete local data audit"
 	@echo "  gate-3        Run Phase 3 checks, including complete preprocessing"
+	@echo "  gate-4        Run Phase 4 checks, including the complete baseline report"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -39,6 +41,7 @@ lint:
 	python3 -B scripts/validate_phase0.py
 	python3 -B scripts/validate_phase2.py
 	python3 -B scripts/validate_phase3.py
+	python3 -B scripts/validate_phase4.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -83,6 +86,14 @@ gate-3:
 	python3 -B scripts/validate_phase3.py
 	uv run pytest ml/tests/test_preprocessing.py
 	$(MAKE) preprocess-data
+
+baseline-report:
+	PYTHONPATH=ml/src uv run python -m ids_ml.evaluation.cli --processed-dir data/processed/phase3 --config configs/baselines-v1.json --feature-contract contracts/features-v1.json --labels contracts/labels-v1.json --split-manifest data/processed/phase3/split-manifest.json --model-output models/baselines/baselines-v1.joblib --json-output reports/generated/baselines/baselines-v1.json --markdown-output reports/generated/baselines/baselines-v1.md --calibration-svg reports/generated/baselines/calibration.svg
+
+gate-4:
+	python3 -B scripts/validate_phase4.py
+	uv run pytest ml/tests/test_evaluation.py
+	$(MAKE) baseline-report
 
 clean:
 	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage reports/generated test-results playwright-report .playwright-mcp .taste-skill

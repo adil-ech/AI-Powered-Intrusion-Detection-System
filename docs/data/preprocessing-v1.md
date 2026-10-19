@@ -46,7 +46,7 @@ The frozen contract contains 63 ordered `float64` features. Its schema hash is:
 35471c9144bcfe174a4d20e4122d3a673267cb5a7594b1283ae47224aa926152
 ```
 
-Both port fields are excluded from `features-v1`. In particular, `destination_port` can strongly encode the CIC lab's service layout. A validation-only with-port diagnostic remains preregistered for Phase 4; final-test data cannot be used to make that choice.
+Both port fields are excluded from `features-v1`. In particular, `destination_port` can strongly encode the CIC lab's service layout. A validation-only with-port diagnostic remains preregistered for Phase 5 model selection; final-test data cannot be used to make that choice.
 
 ## Rare categories and evaluation limits
 

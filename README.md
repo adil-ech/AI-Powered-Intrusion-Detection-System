@@ -10,6 +10,7 @@ A full-stack machine-learning project that will classify network-flow records as
 - Docker Compose development/demo stack.
 - Versioned product, data, model, and API contracts.
 - Streaming CIC-IDS2017 audit, global deduplication, grouped splits, and train-fitted preprocessing.
+- Validation-only dummy and streaming logistic baselines with explicit class, error-rate, and calibration metrics.
 
 No intrusion model is loaded yet. `/ready` intentionally returns `503` until a verified artifact is introduced in Phase 5.
 
@@ -33,6 +34,14 @@ make gate-3
 ```
 
 See [the frozen preprocessing contract](docs/data/preprocessing-v1.md) for grouping, leakage controls, feature schema, and rare-class limitations.
+
+Train and evaluate the reproducible validation baselines with:
+
+```bash
+make gate-4
+```
+
+The [baseline guide](docs/ml/baselines-v1.md) documents the metrics and the sealed final-test boundary.
 
 ## Prerequisites
 

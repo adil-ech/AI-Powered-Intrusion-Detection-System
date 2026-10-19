@@ -94,7 +94,7 @@ The complete preprocessing pipeline was run once to derive the candidate contrac
 - Changed the pre-freeze seed from 1701 to 42 after the first support review so the only intact `RARE_OTHER` group has training support; no model result or final-test prediction was inspected.
 - Confirmed every observed category has training support and every category except `RARE_OTHER` has validation and final-test support.
 - Kept all 11 Heartbleed/`RARE_OTHER` rows in one group instead of breaking the group to manufacture held-out support.
-- Reviewed the with-port policy. `destination_port` remains excluded from `features-v1`; any with-port model is a preregistered validation-only Phase 4 experiment and cannot use final-test results for selection.
+- Reviewed the with-port policy. `destination_port` remains excluded from `features-v1`; any with-port model is a preregistered validation-only Phase 5 selection experiment and cannot use final-test results for selection.
 - Confirmed constants, duplicate-column fingerprints, and imputation means are learned only from training groups.
 - Confirmed the compressed outputs have 65 columns in contract order: 63 features followed by `category` and `is_malicious`.
 - Independently recomputed each compressed output SHA-256 and confirmed 695 unique group IDs in the split manifest.
@@ -118,5 +118,5 @@ The raw source, processed split CSVs, split manifest, fitted preprocessing state
 - Contiguous row windows are an approximation of related traffic, not true host/session groups. The source ML archive omits direct identifiers and timestamps, and a window boundary may separate related flows.
 - `RARE_OTHER` has no honest validation or final-test support, so standalone held-out performance for that category cannot be reported.
 - `INFILTRATION` support is extremely small in every split; every later metric must retain its support count.
-- Excluding `destination_port` collapses many otherwise identical port-scan records. Phase 4 must evaluate the preregistered with-port variant on validation only before any schema revision.
+- Excluding `destination_port` collapses many otherwise identical port-scan records. Phase 5 must evaluate the preregistered with-port variant on validation only before any schema revision.
 - CI validates the same behavior on a safe synthetic fixture and verifies the frozen 63-feature contract. It does not download or preprocess the full 2.83-million-row dataset.
