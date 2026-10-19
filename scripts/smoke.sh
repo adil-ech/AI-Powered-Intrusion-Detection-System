@@ -21,6 +21,27 @@ curl --fail --silent --show-error \
 
 curl --fail --silent --show-error \
   --noproxy '*' \
+  "http://127.0.0.1:${API_PORT:-8000}/ready" \
+  --output "${temporary_directory}/api-ready.json"
+
+curl --fail --silent --show-error \
+  --noproxy '*' \
+  "http://127.0.0.1:${API_PORT:-8000}/api/v1/model" \
+  --output "${temporary_directory}/api-model.json"
+
+curl --fail --silent --show-error \
+  --noproxy '*' \
+  "http://127.0.0.1:${API_PORT:-8000}/api/v1/input-template" \
+  --output "${temporary_directory}/input-template.csv"
+
+curl --fail --silent --show-error \
+  --noproxy '*' \
+  --form "file=@${temporary_directory}/input-template.csv;type=text/csv" \
+  "http://127.0.0.1:${API_PORT:-8000}/api/v1/predictions/file" \
+  --output "${temporary_directory}/api-prediction.json"
+
+curl --fail --silent --show-error \
+  --noproxy '*' \
   "http://127.0.0.1:${FRONTEND_PORT:-8080}/" \
   --output "${temporary_directory}/frontend.html"
 
@@ -44,12 +65,23 @@ class RootElementParser(HTMLParser):
 
 temporary_directory = pathlib.Path(sys.argv[1])
 health = json.loads((temporary_directory / "api-health.json").read_text(encoding="utf-8"))
+ready = json.loads((temporary_directory / "api-ready.json").read_text(encoding="utf-8"))
+model = json.loads((temporary_directory / "api-model.json").read_text(encoding="utf-8"))
+prediction = json.loads(
+    (temporary_directory / "api-prediction.json").read_text(encoding="utf-8")
+)
 frontend = (temporary_directory / "frontend.html").read_text(encoding="utf-8")
 parser = RootElementParser()
 parser.feed(frontend)
 
 if health != {"status": "ok"}:
     raise SystemExit(f"unexpected health response: {health}")
+if ready != {"status": "ready", "model_version": "ids-rf-v1.0.0"}:
+    raise SystemExit(f"unexpected readiness response: {ready}")
+if model.get("artifact_status") != "READY" or len(model.get("required_features", [])) != 63:
+    raise SystemExit(f"unexpected model metadata: {model}")
+if prediction.get("status") != "COMPLETE" or prediction.get("summary", {}).get("valid_rows") != 1:
+    raise SystemExit(f"unexpected prediction response: {prediction}")
 if not parser.found_root:
     raise SystemExit("frontend response does not contain the React root")
 

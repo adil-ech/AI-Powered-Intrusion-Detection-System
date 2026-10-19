@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
+      IDS_CORS_ORIGINS: "${IDS_CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}"
+      IDS_MODEL_DIR: /app/models/ids-rf-v1
       PYTHONUNBUFFERED: "1"
     ports:
       - "${API_PORT:-8000}:8000"
@@ -12,12 +14,14 @@ services:
         - CMD
         - python
         - -c
-        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)
       interval: 5s
       timeout: 3s
       retries: 12
       start_period: 5s
     init: true
+    volumes:
+      - ./models/ids-rf-v1:/app/models/ids-rf-v1:ro
 
   frontend:
     build:
@@ -35,4 +39,3 @@ services:
       retries: 12
       start_period: 5s
     init: true
-

@@ -2,8 +2,10 @@
 
 UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export UV_CACHE_DIR
+PYTHONPATH ?= $(CURDIR)/ml/src
+export PYTHONPATH
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 ensure-baseline
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 ensure-baseline
 
 help:
 	@echo "Available targets:"
@@ -26,6 +28,7 @@ help:
 	@echo "  gate-3        Run Phase 3 checks, including complete preprocessing"
 	@echo "  gate-4        Run Phase 4 checks, including the complete baseline report"
 	@echo "  gate-5        Run Phase 5 checks and verify/finalize the selected artifact"
+	@echo "  gate-6        Run the API contract tests and container smoke test"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -47,6 +50,7 @@ lint:
 	python3 -B scripts/validate_phase3.py
 	python3 -B scripts/validate_phase4.py
 	python3 -B scripts/validate_phase5.py
+	python3 -B scripts/validate_phase6.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -116,6 +120,12 @@ gate-5:
 	python3 -B scripts/validate_phase5.py
 	uv run pytest ml/tests/test_modeling.py
 	$(MAKE) finalize-model
+
+gate-6:
+	python3 -B scripts/validate_phase6.py
+	$(MAKE) test-api
+	docker compose config --quiet
+	$(MAKE) smoke
 
 clean:
 	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage reports/generated test-results playwright-report .playwright-mcp .taste-skill

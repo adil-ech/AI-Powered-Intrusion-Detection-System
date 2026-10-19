@@ -11,6 +11,7 @@
 - Timestamps use UTC RFC 3339 strings.
 - Probabilities are finite numbers in `[0, 1]`.
 - Request IDs are opaque strings and appear in success and error responses.
+- Every response also returns its request ID in the `X-Request-ID` header.
 - The API never returns Python tracebacks or uploaded rows inside an error.
 - The active model metadata is authoritative for required features and thresholds.
 
@@ -64,7 +65,7 @@ Required fields:
 
 ### `GET /api/v1/input-template`
 
-Returns `text/csv` with the active model's required headers and one optional clearly marked synthetic example row. The response includes the model and schema versions as headers.
+Returns `text/csv` with a `row_id` column, the active model's required headers, and one clearly marked `synthetic-example` row built from the artifact's finite imputation values. The response includes the model version, schema version, and schema hash as headers.
 
 ## JSON predictions
 
@@ -89,6 +90,8 @@ Maximum: 1,000 records.
 
 `row_id` is optional but must be unique within the request when supplied. If omitted, the server assigns a one-based string identifier.
 
+JSON feature names use the same canonicalization as CSV headers. Values must be JSON numbers; strings, booleans, nulls, NaN, and infinities are invalid and are never coerced.
+
 ## CSV predictions
 
 ### `POST /api/v1/predictions/file`
@@ -99,6 +102,7 @@ Maximum: 1,000 records.
 - Maximum data rows: 10,000.
 - Maximum columns: 120.
 - Required column order is flexible; names are canonicalized.
+- An optional `row_id` column is preserved; otherwise one-based IDs are assigned.
 - Extra columns are ignored and reported as warnings.
 
 Structural failures reject the request. Row-level value failures are reported in `row_errors`; valid rows are still scored. If every row is invalid, the request returns `422`.
@@ -206,6 +210,10 @@ Stable v1 error codes include:
 - `NO_VALID_ROWS`
 - `MODEL_UNAVAILABLE`
 - `INFERENCE_FAILED`
+- `INVALID_REQUEST`
+- `DUPLICATE_ROW_ID`
+
+Errors expose field or column names when useful, but never rejected cell values, uploaded rows, internal exception messages, or tracebacks.
 
 ## Compatibility
 
@@ -213,4 +221,3 @@ Stable v1 error codes include:
 - Existing fields do not change meaning within v1.
 - Removing or renaming a field requires `/api/v2`.
 - A new model may remain on API v1 when it satisfies the same response contract; clients discover its feature schema through the model endpoint.
-

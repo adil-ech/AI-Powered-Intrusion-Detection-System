@@ -1,10 +1,10 @@
 # AI-Powered Intrusion Detection System
 
-A full-stack machine-learning project that will classify network-flow records as benign or suspicious and categorize supported attacks. Dataset provenance and quality are verified, and the deterministic preprocessing pipeline now produces frozen model-ready inputs for baseline training.
+A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, and versioned FastAPI service are implemented through Phase 6.
 
 ## Current capabilities
 
-- FastAPI service with liveness and model-readiness endpoints.
+- FastAPI service with liveness, readiness, metadata, input-template, JSON prediction, and CSV upload endpoints.
 - React and TypeScript status screen connected to the API.
 - Python and frontend formatting, linting, typing, and test commands.
 - Docker Compose development/demo stack.
@@ -12,8 +12,9 @@ A full-stack machine-learning project that will classify network-flow records as
 - Streaming CIC-IDS2017 audit, global deduplication, grouped splits, and train-fitted preprocessing.
 - Validation-only dummy and streaming logistic baselines with explicit class, error-rate, and calibration metrics.
 - Group-aware Random Forest selection, deterministic calibration, and integrity-checked artifact packaging.
+- Strict batch validation, partial-success row errors, correlation IDs, privacy-safe logs, and environment-scoped CORS.
 
-No intrusion model is loaded yet. `/ready` intentionally returns `503` until a verified artifact is introduced in Phase 5.
+The API verifies every file in `models/ids-rf-v1/` at startup. `/health` remains a process-liveness check; `/ready` returns `200` only after the model is integrity-checked and compatible.
 
 ## Dataset audit
 
@@ -71,7 +72,7 @@ make build
 Run the API:
 
 ```bash
-uv run uvicorn backend.app.main:app --reload
+PYTHONPATH=ml/src uv run uvicorn backend.app.main:app --reload
 ```
 
 Run the frontend in another terminal:
@@ -92,6 +93,8 @@ docker compose up --build
 - Application: <http://localhost:8080>
 - API documentation: <http://localhost:8000/docs>
 - API liveness: <http://localhost:8000/health>
+- Model readiness: <http://localhost:8000/ready>
+- Input template: <http://localhost:8000/api/v1/input-template>
 
 Stop the stack with:
 
@@ -109,10 +112,13 @@ make test
 make build
 docker compose config --quiet
 make smoke
+make gate-6
 make clean
 ```
 
 `make smoke` creates response files in a temporary directory, always removes that directory, and shuts down its Compose services before exiting.
+
+`make gate-6` validates the API contract, runs all backend tests, checks Compose, starts the full stack with the real ignored artifact, uploads the generated template, and verifies a prediction before shutting the stack down.
 
 ## Project contracts
 
