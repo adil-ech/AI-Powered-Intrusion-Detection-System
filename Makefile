@@ -128,6 +128,6 @@ gate-6:
 	$(MAKE) smoke
 
 clean:
-	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage reports/generated test-results playwright-report .playwright-mcp .taste-skill
+	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage frontend/node_modules/.tmp reports/generated test-results playwright-report .playwright-mcp .taste-skill
 	find backend ml scripts -type d -name __pycache__ -prune -exec rm -rf {} +
 	find backend ml scripts -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
