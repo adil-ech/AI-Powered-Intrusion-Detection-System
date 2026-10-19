@@ -1,7 +1,7 @@
 # Model card: CIC-IDS2017 two-stage Random Forest
 
 - Model version: `ids-rf-v1.0.0`
-- Status: selected and frozen; final-test metrics pending the one-time Gate 5 finalization
+- Status: frozen Gate 5 MVP candidate; one-time final-test evaluation complete
 - Intended use: batch classification of CICFlowMeter-compatible network-flow features for an educational intrusion-detection demo
 - Out of scope: packet capture, automated blocking, novel-attack detection, production SIEM replacement, and claims of real-world generalization
 
@@ -48,4 +48,45 @@ These scores describe behavior on CIC-IDS2017-derived grouped splits; they are n
 
 ## Final evaluation
 
-The final-test split remains sealed until `configs/model-selection-v1.json`, this model design, calibration methods, feature variant, and threshold are committed and Gate 5 is run. This section will be updated from the immutable artifact metrics immediately after that one-time evaluation.
+The final-test split was evaluated once after the complete selection was committed at `585b327`. It contains 414,325 rows: 362,219 benign and 52,106 malicious.
+
+| Metric | Final-test result |
+|---|---:|
+| Malicious precision | 0.939113 |
+| Malicious recall | 0.999616 |
+| Malicious F1 | 0.968420 |
+| PR AUC | 0.999797 |
+| ROC AUC | 0.999948 |
+| False-positive rate | 0.009323 |
+| False-negative rate | 0.000384 |
+| Binary Brier score | 0.001075 |
+| Binary log loss | 0.004161 |
+| Observed-family macro F1 | 0.918035 |
+| All-contract-family macro F1 | 0.786887 |
+| Family weighted F1 | 0.999359 |
+| Family log loss | 0.007885 |
+
+The binary confusion matrix, ordered `[benign, malicious]`, is `[[358842, 3377], [20, 52086]]`.
+
+| Attack family | Precision | Recall | F1 | Support |
+|---|---:|---:|---:|---:|
+| `DOS_DDOS` | 0.999430 | 0.999980 | 0.999705 | 49,079 |
+| `PORT_SCAN` | 0.994118 | 0.946779 | 0.969871 | 357 |
+| `BRUTE_FORCE` | 0.999528 | 0.997643 | 0.998584 | 2,121 |
+| `WEB_ATTACK` | 0.996700 | 0.996700 | 0.996700 | 303 |
+| `BOTNET` | 1.000000 | 0.995798 | 0.997895 | 238 |
+| `INFILTRATION` | 1.000000 | 0.375000 | 0.545455 | 8 |
+| `RARE_OTHER` | 0.000000 | 0.000000 | 0.000000 | 0 |
+
+`INFILTRATION` remains the clearest limitation: six of eight final-test rows were missed by the family classifier. `RARE_OTHER` remains unmeasurable because it has no honest final-test support. These results do not change the already frozen selection.
+
+## Artifact identity
+
+- Artifact directory: `models/ids-rf-v1/`
+- Artifact manifest SHA-256: `dfa7678b89009aa03af89957dde958af20af6f969decdd295ba7209eaa6c3601`
+- Serialized pipeline SHA-256: `66cb3e864d11f75338555ffbfc66b12d0dca63ed8f4403ac71a2e1261b20a6ef`
+- Serialized pipeline size: 2,796,373 bytes
+- Feature schema SHA-256: `35471c9144bcfe174a4d20e4122d3a673267cb5a7594b1283ae47224aa926152`
+- Created at: `2026-10-19T17:00:19.120335Z`
+
+The artifact reloaded successfully and matched both binary and family probabilities within `1e-12` on 8,192 selection rows. Subsequent Gate 5 runs verify the saved hashes and metrics without reopening final-test rows for predictions.

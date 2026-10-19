@@ -98,6 +98,10 @@ def _validate_docs(errors: list[str]) -> None:
         "0.015",
         "0.009507",
         "0.998202",
+        "0.999616",
+        "0.009323",
+        "0.918035",
+        "evaluated once",
         "INFILTRATION",
         "RARE_OTHER",
     ):
