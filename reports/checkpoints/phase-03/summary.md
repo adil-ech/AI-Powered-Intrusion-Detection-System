@@ -98,7 +98,7 @@ The complete preprocessing pipeline was run once to derive the candidate contrac
 - Confirmed constants, duplicate-column fingerprints, and imputation means are learned only from training groups.
 - Confirmed the compressed outputs have 65 columns in contract order: 63 features followed by `category` and `is_malicious`.
 - Independently recomputed each compressed output SHA-256 and confirmed 695 unique group IDs in the split manifest.
-- Confirmed the stratified random-row split was not used as a headline split; it remains a Phase 4 leakage diagnostic only.
+- Confirmed the stratified random-row split was not used as a headline split; it remains an optional later leakage diagnostic only.
 
 ## Evidence files
 
