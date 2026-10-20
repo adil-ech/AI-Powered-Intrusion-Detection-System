@@ -11,10 +11,9 @@ const samplePath = path.join(
   projectRoot,
   "frontend/public/samples/ids-demo-mixed.csv",
 );
-const evidenceDirectory = path.join(
-  projectRoot,
-  "reports/checkpoints/phase-08/browser",
-);
+const evidenceDirectory = process.env.E2E_EVIDENCE_DIR
+  ? path.resolve(projectRoot, process.env.E2E_EVIDENCE_DIR)
+  : path.join(projectRoot, "test-results/e2e-evidence");
 
 function compose(...args: string[]) {
   execFileSync(

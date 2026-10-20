@@ -42,4 +42,4 @@ Then run:
 make gate-8
 ```
 
-The browser gate starts clean Compose containers, verifies readiness and the server-generated template, runs the safe mixed sample through the real model, checks review and export behavior, exercises invalid-schema and over-limit errors, restarts the API, and confirms recovery. Containers and Playwright scratch output are cleaned or isolated from committed checkpoint evidence.
+The browser gate starts clean Compose containers, verifies readiness and the server-generated template, runs the safe mixed sample through the real model, checks review and export behavior, exercises invalid-schema and over-limit errors, restarts the API, and confirms recovery. Containers and Playwright output under `test-results/` are temporary. Set `E2E_EVIDENCE_DIR` only when intentionally refreshing reviewed checkpoint screenshots; routine gate runs never rewrite committed evidence.

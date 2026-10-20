@@ -99,6 +99,7 @@ def _validate_e2e(errors: list[str]) -> None:
             'compose("stop", "api")',
             'compose("start", "api")',
             "applicationErrors",
+            '"test-results/e2e-evidence"',
         ),
         errors,
     )
