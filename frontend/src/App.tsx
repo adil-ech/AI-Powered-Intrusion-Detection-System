@@ -1,62 +1,37 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ResultsDashboard } from "./components/ResultsDashboard";
-import { UploadExperience } from "./components/UploadExperience";
 import {
-  FIXTURE_ERRORS,
-  FIXTURE_RESPONSES,
-  loadFixture,
-} from "./fixtures/api-v1";
+  ApiClientError,
+  fetchDemoSample,
+  fetchInputTemplate,
+  fetchModelMetadata,
+  fetchReadiness,
+  uploadTrafficCsv,
+} from "./api/client";
+import { ResultsDashboard } from "./components/ResultsDashboard";
+import {
+  UploadExperience,
+  type ModelConnection,
+} from "./components/UploadExperience";
+import { downloadBlobFile } from "./lib/csv";
 import type {
   ApiErrorEnvelope,
   BatchPredictionResponse,
-  FixtureScenario,
+  ModelMetadata,
 } from "./types/api";
 
 type AppState =
   | { kind: "idle" }
-  | { kind: "loading"; scenario: FixtureScenario; sourceName?: string }
+  | { kind: "loading"; sourceName: string }
   | {
       kind: "result";
-      scenario: FixtureScenario;
       response: BatchPredictionResponse;
-      sourceName?: string;
-      initialRowId?: string;
+      sourceName: string;
+      model: ModelMetadata;
     }
-  | { kind: "error"; scenario?: FixtureScenario; error: ApiErrorEnvelope };
+  | { kind: "error"; error: ApiErrorEnvelope };
 
-const RESPONSE_SCENARIOS = ["normal", "mixed", "edge", "empty"] as const;
-const ERROR_SCENARIOS = ["invalid", "failure"] as const;
-
-function initialState(): AppState {
-  const params = new URLSearchParams(window.location.search);
-  const fixture = params.get("fixture");
-  const initialRowId = params.get("row") ?? undefined;
-
-  if (fixture === "loading") {
-    return { kind: "loading", scenario: "mixed" };
-  }
-  if (RESPONSE_SCENARIOS.some((scenario) => scenario === fixture)) {
-    const scenario = fixture as (typeof RESPONSE_SCENARIOS)[number];
-    return {
-      kind: "result",
-      scenario,
-      response: structuredClone(FIXTURE_RESPONSES[scenario]),
-      initialRowId,
-    };
-  }
-  if (ERROR_SCENARIOS.some((scenario) => scenario === fixture)) {
-    const scenario = fixture as (typeof ERROR_SCENARIOS)[number];
-    return {
-      kind: "error",
-      scenario,
-      error: structuredClone(FIXTURE_ERRORS[scenario]),
-    };
-  }
-  return { kind: "idle" };
-}
-
-function LoadingView({ onCancel }: { onCancel: () => void }) {
+export function LoadingView({ onCancel }: { onCancel: () => void }) {
   return (
     <main className="state-page loading-page" aria-labelledby="loading-title">
       <div className="state-column">
@@ -68,7 +43,7 @@ function LoadingView({ onCancel }: { onCancel: () => void }) {
         </div>
         <h1 id="loading-title">Preparing the review</h1>
         <p role="status">
-          Checking the input contract and loading a versioned fixture response.
+          Sending the CSV to API-v1 and waiting for the active model response.
         </p>
         <button
           className="button button-neutral"
@@ -82,7 +57,7 @@ function LoadingView({ onCancel }: { onCancel: () => void }) {
   );
 }
 
-function ErrorView({
+export function ErrorView({
   envelope,
   onReset,
   onReviewSample,
@@ -94,6 +69,8 @@ function ErrorView({
   const missingColumns = Array.isArray(envelope.error.details?.columns)
     ? (envelope.error.details.columns as string[])
     : [];
+  const visibleColumns = missingColumns.slice(0, 8);
+  const remainingColumns = missingColumns.length - visibleColumns.length;
   return (
     <main className="state-page error-page" aria-labelledby="error-title">
       <div className="state-column">
@@ -107,10 +84,15 @@ function ErrorView({
         <h1 id="error-title">This batch could not be reviewed</h1>
         <p>{envelope.error.message}</p>
         <span className="error-code">{envelope.error.code}</span>
-        {missingColumns.length > 0 ? (
+        {visibleColumns.length > 0 ? (
           <div className="missing-columns" role="note">
             <strong>Missing fields</strong>
-            <p>{missingColumns.join(", ")}</p>
+            <p>
+              {visibleColumns.join(", ")}
+              {remainingColumns > 0
+                ? `, and ${remainingColumns} more required fields`
+                : ""}
+            </p>
           </div>
         ) : null}
         <p className="request-reference">
@@ -137,58 +119,140 @@ function ErrorView({
   );
 }
 
-function localError(code: string, message: string): ApiErrorEnvelope {
+function localError(
+  code: string,
+  message: string,
+  requestId = "client_validation",
+): ApiErrorEnvelope {
   return {
     error: {
       code,
       message,
-      request_id: "local_file_check",
+      request_id: requestId,
     },
   };
 }
 
-export default function App() {
-  const [state, setState] = useState<AppState>(initialState);
-  const controllerRef = useRef<AbortController | null>(null);
-
-  useEffect(
-    () => () => {
-      controllerRef.current?.abort();
-    },
-    [],
+function errorEnvelope(error: unknown): ApiErrorEnvelope {
+  if (error instanceof ApiClientError) {
+    return error.envelope;
+  }
+  return localError(
+    "CLIENT_REQUEST_FAILED",
+    "The request could not be completed. Try again.",
+    "client_transport",
   );
+}
+
+function modelMatches(
+  response: BatchPredictionResponse,
+  model: ModelMetadata,
+): boolean {
+  return (
+    response.model.name === model.model_name &&
+    response.model.version === model.model_version &&
+    response.model.feature_schema_version === model.feature_schema_version
+  );
+}
+
+export default function App() {
+  const [state, setState] = useState<AppState>({ kind: "idle" });
+  const [connection, setConnection] = useState<ModelConnection>({
+    status: "checking",
+  });
+  const uploadControllerRef = useRef<AbortController | null>(null);
+  const modelControllerRef = useRef<AbortController | null>(null);
+  const templateControllerRef = useRef<AbortController | null>(null);
+  const modelRef = useRef<ModelMetadata | null>(null);
+  const submittingRef = useRef(false);
+
+  const refreshModel = useCallback(async () => {
+    modelControllerRef.current?.abort();
+    const controller = new AbortController();
+    modelControllerRef.current = controller;
+    setConnection({ status: "checking" });
+    try {
+      const readiness = await fetchReadiness(controller.signal);
+      const model = await fetchModelMetadata(controller.signal);
+      if (readiness.model_version !== model.model_version) {
+        throw new ApiClientError(
+          localError(
+            "MODEL_METADATA_MISMATCH",
+            "Readiness and model metadata report different versions.",
+            "client_readiness",
+          ),
+        );
+      }
+      modelRef.current = model;
+      setConnection({ status: "ready", model });
+    } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
+      modelRef.current = null;
+      setConnection({
+        status: "unavailable",
+        message: errorEnvelope(error).error.message,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const initialCheck = window.setTimeout(() => void refreshModel(), 0);
+    return () => {
+      window.clearTimeout(initialCheck);
+      uploadControllerRef.current?.abort();
+      modelControllerRef.current?.abort();
+      templateControllerRef.current?.abort();
+    };
+  }, [refreshModel]);
 
   const reset = () => {
-    controllerRef.current?.abort();
+    uploadControllerRef.current?.abort();
+    submittingRef.current = false;
     setState({ kind: "idle" });
+    void refreshModel();
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
-  const analyze = async (scenario: FixtureScenario, sourceName?: string) => {
-    controllerRef.current?.abort();
+  const runAnalysis = async (
+    sourceName: string,
+    getFile: (signal: AbortSignal) => Promise<File>,
+  ) => {
+    if (submittingRef.current) {
+      return;
+    }
+    submittingRef.current = true;
+    uploadControllerRef.current?.abort();
     const controller = new AbortController();
-    controllerRef.current = controller;
-    setState({ kind: "loading", scenario, sourceName });
+    uploadControllerRef.current = controller;
+    setState({ kind: "loading", sourceName });
 
     try {
-      const response = await loadFixture(scenario, controller.signal);
-      setState({ kind: "result", scenario, response, sourceName });
+      const file = await getFile(controller.signal);
+      const response = await uploadTrafficCsv(file, controller.signal);
+      const model = modelRef.current;
+      if (model === null || !modelMatches(response, model)) {
+        throw new ApiClientError(
+          localError(
+            "MODEL_METADATA_MISMATCH",
+            "The prediction response does not match the active model metadata.",
+            response.request_id,
+          ),
+        );
+      }
+      setState({ kind: "result", response, sourceName, model });
       window.scrollTo({ top: 0, behavior: "auto" });
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (controller.signal.aborted) {
         return;
       }
-      setState({
-        kind: "error",
-        scenario,
-        error:
-          typeof error === "object" && error !== null && "error" in error
-            ? (error as ApiErrorEnvelope)
-            : localError(
-                "FIXTURE_LOAD_FAILED",
-                "The preview response could not be loaded.",
-              ),
-      });
+      setState({ kind: "error", error: errorEnvelope(error) });
+    } finally {
+      if (uploadControllerRef.current === controller) {
+        uploadControllerRef.current = null;
+        submittingRef.current = false;
+      }
     }
   };
 
@@ -210,28 +274,57 @@ export default function App() {
       });
       return;
     }
-    void analyze("mixed", file.name);
+    void runAnalysis(file.name, async () => file);
+  };
+
+  const reviewSample = () => {
+    void runAnalysis("ids-demo-mixed.csv", fetchDemoSample);
+  };
+
+  const downloadTemplate = async () => {
+    templateControllerRef.current?.abort();
+    const controller = new AbortController();
+    templateControllerRef.current = controller;
+    try {
+      const download = await fetchInputTemplate(controller.signal);
+      downloadBlobFile(download.blob, download.filename);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setState({ kind: "error", error: errorEnvelope(error) });
+      }
+    } finally {
+      if (templateControllerRef.current === controller) {
+        templateControllerRef.current = null;
+      }
+    }
   };
 
   if (state.kind === "loading") {
-    return <LoadingView onCancel={reset} />;
+    return (
+      <LoadingView
+        onCancel={() => {
+          uploadControllerRef.current?.abort();
+          submittingRef.current = false;
+          setState({ kind: "idle" });
+        }}
+      />
+    );
   }
   if (state.kind === "error") {
     return (
       <ErrorView
         envelope={state.error}
         onReset={reset}
-        onReviewSample={() => void analyze("mixed")}
+        onReviewSample={reviewSample}
       />
     );
   }
   if (state.kind === "result") {
     return (
       <ResultsDashboard
-        initialRowId={state.initialRowId}
+        model={state.model}
         onReset={reset}
         response={state.response}
-        scenario={state.scenario}
         sourceName={state.sourceName}
       />
     );
@@ -239,8 +332,11 @@ export default function App() {
 
   return (
     <UploadExperience
+      connection={connection}
+      onDownloadTemplate={downloadTemplate}
       onFile={handleFile}
-      onScenario={(scenario) => void analyze(scenario)}
+      onRetryConnection={() => void refreshModel()}
+      onReviewSample={reviewSample}
     />
   );
 }

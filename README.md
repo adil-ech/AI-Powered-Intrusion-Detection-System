@@ -1,11 +1,12 @@
 # AI-Powered Intrusion Detection System
 
-A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, and versioned FastAPI service are implemented through Phase 6.
+A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, and live React review workflow are implemented through Phase 8.
 
 ## Current capabilities
 
 - FastAPI service with liveness, readiness, metadata, input-template, JSON prediction, and CSV upload endpoints.
-- React and TypeScript status screen connected to the API.
+- React and TypeScript upload, triage, row-detail, filtering, and export workflow connected to the live API.
+- Safe six-row browser demo with known model assertions and no network identifiers.
 - Python and frontend formatting, linting, typing, and test commands.
 - Docker Compose development/demo stack.
 - Versioned product, data, model, and API contracts.
@@ -75,13 +76,13 @@ Run the API:
 PYTHONPATH=ml/src uv run uvicorn backend.app.main:app --reload
 ```
 
-Run the frontend in another terminal:
+Run the frontend in another terminal. Copy `frontend/.env.example` to `frontend/.env.local` first only when you need to override its routing:
 
 ```bash
 npm --prefix frontend run dev
 ```
 
-The development frontend is available at <http://localhost:5173> and proxies health calls to <http://localhost:8000>.
+The development frontend is available at <http://localhost:5173> and proxies readiness and API calls to <http://localhost:8000>.
 
 ## Docker
 
@@ -112,13 +113,14 @@ make test
 make build
 docker compose config --quiet
 make smoke
-make gate-6
+make test-e2e
+make gate-8
 make clean
 ```
 
 `make smoke` creates response files in a temporary directory, always removes that directory, and shuts down its Compose services before exiting.
 
-`make gate-6` validates the API contract, runs all backend tests, checks Compose, starts the full stack with the real ignored artifact, uploads the generated template, and verifies a prediction before shutting the stack down.
+`make gate-8` validates every repository contract, runs the ML, API, and frontend suites, builds both application layers, smoke-tests the Compose stack, and drives the complete upload-to-export browser journey against the real ignored model artifact. See the [Phase 8 integration guide](docs/frontend/phase-08-integration.md).
 
 ## Project contracts
 

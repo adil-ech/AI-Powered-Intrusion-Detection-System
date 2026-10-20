@@ -13,6 +13,28 @@ export type AttackCategory = (typeof ATTACK_CATEGORIES)[number];
 export type ConfidenceStatus = "OK" | "LOW_CONFIDENCE";
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 
+export interface ReadinessResponse {
+  status: "ready";
+  model_version: string;
+}
+
+export interface ModelMetadata {
+  model_name: string;
+  model_version: string;
+  artifact_status: "READY";
+  training_dataset: string;
+  feature_schema_version: string;
+  feature_schema_hash: string;
+  required_features: string[];
+  attack_categories: AttackCategory[];
+  thresholds: {
+    malicious: number;
+    low_confidence: number;
+    high_risk: number;
+  };
+  created_at: string;
+}
+
 export interface ResponseModelIdentity {
   name: string;
   version: string;
@@ -66,6 +88,3 @@ export interface ApiErrorEnvelope {
     request_id: string;
   };
 }
-
-export type FixtureScenario =
-  "normal" | "mixed" | "edge" | "empty" | "invalid" | "failure";

@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 
-import { downloadTemplate } from "../lib/csv";
-import type { FixtureScenario } from "../types/api";
+import type { ModelMetadata } from "../types/api";
+
+export type ModelConnection =
+  | { status: "checking" }
+  | { status: "ready"; model: ModelMetadata }
+  | { status: "unavailable"; message: string };
 
 interface UploadExperienceProps {
+  connection: ModelConnection;
+  onDownloadTemplate: () => Promise<void>;
   onFile: (file: File) => void;
-  onScenario: (scenario: FixtureScenario) => void;
+  onRetryConnection: () => void;
+  onReviewSample: () => void;
 }
 
 const DECISIONS = [
@@ -52,18 +59,9 @@ const LIMITS = [
   {
     question: "Where does an upload go?",
     answer:
-      "The application processes uploads in memory without retaining them. This Phase 7 preview uses local fixtures and makes no network request.",
+      "The API processes uploads in memory without retaining row values or writing the CSV to application storage.",
   },
 ] as const;
-
-const SCENARIOS: { id: FixtureScenario; label: string; detail: string }[] = [
-  { id: "normal", label: "Normal", detail: "Eight benign rows" },
-  { id: "mixed", label: "Mixed", detail: "All review controls" },
-  { id: "edge", label: "Partial", detail: "Errors and low confidence" },
-  { id: "empty", label: "Empty", detail: "No returned rows" },
-  { id: "invalid", label: "Invalid", detail: "Missing columns" },
-  { id: "failure", label: "Failure", detail: "Model unavailable" },
-];
 
 function DecisionFragment({ active }: { active: DecisionId }) {
   if (active === "schema") {
@@ -135,12 +133,17 @@ function DecisionFragment({ active }: { active: DecisionId }) {
 }
 
 export function UploadExperience({
+  connection,
+  onDownloadTemplate,
   onFile,
-  onScenario,
+  onRetryConnection,
+  onReviewSample,
 }: UploadExperienceProps) {
   const [activeDecision, setActiveDecision] = useState<DecisionId>("schema");
   const [activeLimit, setActiveLimit] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
+  const modelReady = connection.status === "ready";
 
   useEffect(() => {
     const elements = Array.from(
@@ -187,7 +190,7 @@ export function UploadExperience({
   }, []);
 
   const acceptFile = (file?: File) => {
-    if (file) {
+    if (file && modelReady) {
       onFile(file);
     }
   };
@@ -257,8 +260,9 @@ export function UploadExperience({
               </div>
               <input
                 aria-label="Traffic CSV"
-                aria-describedby="file-rules fixture-note"
+                aria-describedby="file-rules service-note"
                 accept=".csv,text/csv,application/csv"
+                disabled={!modelReady}
                 id="traffic-file"
                 name="traffic-file"
                 onChange={(event) => acceptFile(event.target.files?.[0])}
@@ -267,6 +271,7 @@ export function UploadExperience({
               <div className="upload-actions">
                 <button
                   className="button button-primary"
+                  disabled={!modelReady}
                   type="button"
                   onClick={() =>
                     document.getElementById("traffic-file")?.click()
@@ -276,8 +281,9 @@ export function UploadExperience({
                 </button>
                 <button
                   className="text-button"
+                  disabled={!modelReady}
                   type="button"
-                  onClick={() => onScenario("mixed")}
+                  onClick={onReviewSample}
                 >
                   Review sample
                 </button>
@@ -290,17 +296,50 @@ export function UploadExperience({
             <div className="entry-practical" data-rise>
               <button
                 className="text-button"
+                disabled={!modelReady || isDownloadingTemplate}
                 type="button"
-                onClick={downloadTemplate}
+                onClick={() => {
+                  setIsDownloadingTemplate(true);
+                  void onDownloadTemplate().finally(() =>
+                    setIsDownloadingTemplate(false),
+                  );
+                }}
               >
-                Download 63-field template
+                {isDownloadingTemplate
+                  ? "Downloading template…"
+                  : "Download model template"}
               </button>
               <p>Uploads are processed in memory and are not retained.</p>
             </div>
-            <p id="fixture-note" className="fixture-disclosure" data-rise>
-              This preview uses versioned local responses. Live model calls are
-              connected at the next implementation gate.
-            </p>
+            <div
+              id="service-note"
+              className="service-disclosure service-status"
+              data-rise
+              role="status"
+            >
+              {connection.status === "checking" ? (
+                <span>Checking model readiness…</span>
+              ) : null}
+              {connection.status === "ready" ? (
+                <span>
+                  Model ready: {connection.model.model_version} ·{" "}
+                  {connection.model.feature_schema_version} ·{" "}
+                  {connection.model.required_features.length} fields
+                </span>
+              ) : null}
+              {connection.status === "unavailable" ? (
+                <>
+                  <span>{connection.message}</span>
+                  <button
+                    className="text-button"
+                    onClick={onRetryConnection}
+                    type="button"
+                  >
+                    Retry connection
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
         </section>
 
@@ -361,8 +400,12 @@ export function UploadExperience({
                 <span>columns per request</span>
               </div>
               <div className="contract-mark is-wide">
-                <strong>ids-rf-v1.0.0</strong>
-                <span>frozen artifact version</span>
+                <strong>
+                  {connection.status === "ready"
+                    ? connection.model.model_version
+                    : "Awaiting API"}
+                </strong>
+                <span>active artifact version</span>
               </div>
             </div>
           </div>
@@ -455,27 +498,38 @@ export function UploadExperience({
           </div>
         </section>
 
-        <section className="scenario-section" aria-labelledby="scenario-title">
+        <section className="scenario-section" aria-labelledby="service-title">
           <div className="wrap scenario-layout" data-reveal>
             <div>
-              <h2 id="scenario-title">Inspect every state</h2>
+              <h2 id="service-title">One live model boundary</h2>
               <p>
-                Each sample is a versioned API-v1 response. Nothing here depends
-                on the live model service.
+                Readiness, templates, uploads, and predictions resolve through
+                API-v1 against the same integrity-checked artifact.
               </p>
             </div>
-            <div className="scenario-list">
-              {SCENARIOS.map((scenario) => (
-                <button
-                  className="scenario-row"
-                  key={scenario.id}
-                  onClick={() => onScenario(scenario.id)}
-                  type="button"
-                >
-                  <strong>{scenario.label}</strong>
-                  <span>{scenario.detail}</span>
-                </button>
-              ))}
+            <div className="scenario-list" data-ui>
+              <div className="scenario-row">
+                <strong>Readiness</strong>
+                <span>
+                  {connection.status === "ready" ? "Ready" : "Not ready"}
+                </span>
+              </div>
+              <div className="scenario-row">
+                <strong>Artifact</strong>
+                <span>
+                  {connection.status === "ready"
+                    ? connection.model.model_version
+                    : "Unavailable"}
+                </span>
+              </div>
+              <div className="scenario-row">
+                <strong>Schema</strong>
+                <span>
+                  {connection.status === "ready"
+                    ? connection.model.feature_schema_version
+                    : "Unavailable"}
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -488,12 +542,13 @@ export function UploadExperience({
           <div>
             <h2 id="closing-title">Put a traffic batch under review</h2>
             <p>
-              Start with a local CSV or inspect the mixed fixture before live
-              API integration.
+              Start with a model-compatible CSV or send the safe six-row sample
+              through the live inference service.
             </p>
           </div>
           <button
             className="button button-primary"
+            disabled={!modelReady}
             type="button"
             onClick={() => document.getElementById("traffic-file")?.click()}
           >

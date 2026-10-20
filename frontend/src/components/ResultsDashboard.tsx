@@ -19,14 +19,14 @@ import { ATTACK_CATEGORIES } from "../types/api";
 import type {
   AttackCategory,
   BatchPredictionResponse,
-  FixtureScenario,
+  ModelMetadata,
   Prediction,
   RiskLevel,
 } from "../types/api";
 
 interface ResultsDashboardProps {
+  model: ModelMetadata;
   response: BatchPredictionResponse;
-  scenario: FixtureScenario;
   sourceName?: string;
   initialRowId?: string;
   onReset: () => void;
@@ -268,8 +268,8 @@ function RowDetailDialog({
 }
 
 export function ResultsDashboard({
+  model,
   response,
-  scenario,
   sourceName,
   initialRowId,
   onReset,
@@ -277,6 +277,9 @@ export function ResultsDashboard({
   const [category, setCategory] = useState<AttackCategory | "ALL">("ALL");
   const [risk, setRisk] = useState<RiskLevel | "ALL">("ALL");
   const [confidence, setConfidence] = useState<"ALL" | "LOW_CONFIDENCE">("ALL");
+  const [verdict, setVerdict] = useState<"ALL" | "SUSPICIOUS" | "BENIGN">(
+    "ALL",
+  );
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>({
     key: "risk_level",
@@ -298,18 +301,25 @@ export function ResultsDashboard({
       const riskMatches = risk === "ALL" || row.risk_level === risk;
       const confidenceMatches =
         confidence === "ALL" || row.confidence_status === confidence;
+      const verdictMatches =
+        verdict === "ALL" ||
+        (verdict === "SUSPICIOUS" ? row.is_suspicious : !row.is_suspicious);
       const queryMatches = row.row_id
         .toLowerCase()
         .includes(query.trim().toLowerCase());
       return (
-        categoryMatches && riskMatches && confidenceMatches && queryMatches
+        categoryMatches &&
+        riskMatches &&
+        confidenceMatches &&
+        verdictMatches &&
+        queryMatches
       );
     });
     return [...rows].sort((left, right) => {
       const order = compareRows(left, right, sort.key);
       return sort.direction === "ascending" ? order : -order;
     });
-  }, [category, confidence, query, response.predictions, risk, sort]);
+  }, [category, confidence, query, response.predictions, risk, sort, verdict]);
 
   const pageCount = Math.max(Math.ceil(filteredRows.length / PAGE_SIZE), 1);
   const safePage = Math.min(page, pageCount);
@@ -342,9 +352,14 @@ export function ResultsDashboard({
   };
 
   const exportRows = () => {
+    const source = (sourceName ?? "results")
+      .replace(/\.csv$/i, "")
+      .replace(/[^a-z0-9_-]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase();
     downloadTextFile(
       buildEnrichedCsv(response, filteredRows),
-      `flow-review-${scenario}.csv`,
+      `flow-review-${source || "results"}.csv`,
       "text/csv;charset=utf-8",
     );
   };
@@ -360,7 +375,7 @@ export function ResultsDashboard({
           >
             Flow review
           </button>
-          <span className="mode-label">Fixture preview</span>
+          <span className="mode-label">Live model</span>
         </div>
         <div className="dashboard-actions">
           <button
@@ -387,7 +402,7 @@ export function ResultsDashboard({
             <h1 id="dashboard-title">Traffic review</h1>
             <p>
               {sourceName ? `Uploaded as ${sourceName}. ` : ""}
-              Displaying the versioned {scenario} fixture for API-v1.
+              Scored by API-v1 using the active model.
             </p>
           </div>
           <dl className="request-meta">
@@ -496,6 +511,7 @@ export function ResultsDashboard({
                 setCategory("ALL");
                 setRisk("ALL");
                 setConfidence("ALL");
+                setVerdict("ALL");
                 setQuery("");
                 setPage(1);
               }}
@@ -519,6 +535,23 @@ export function ResultsDashboard({
                 type="search"
                 value={query}
               />
+            </label>
+            <label>
+              <span>Verdict</span>
+              <select
+                onChange={(event) =>
+                  changeFilter(() =>
+                    setVerdict(
+                      event.target.value as "ALL" | "SUSPICIOUS" | "BENIGN",
+                    ),
+                  )
+                }
+                value={verdict}
+              >
+                <option value="ALL">All verdicts</option>
+                <option value="SUSPICIOUS">Suspicious</option>
+                <option value="BENIGN">Benign</option>
+              </select>
             </label>
             <label>
               <span>Category</span>
@@ -682,7 +715,7 @@ export function ResultsDashboard({
             {visibleRows.length === 0 ? (
               <div className="table-empty">
                 <h3>No rows match this view</h3>
-                <p>Clear the filters or load a fixture with prediction rows.</p>
+                <p>Clear the filters or upload another traffic batch.</p>
               </div>
             ) : null}
           </div>
@@ -748,15 +781,15 @@ export function ResultsDashboard({
           <dl>
             <div>
               <dt>Training data</dt>
-              <dd>CIC-IDS2017</dd>
+              <dd>{model.training_dataset}</dd>
             </div>
             <div>
               <dt>Malicious threshold</dt>
-              <dd>0.015</dd>
+              <dd>{model.thresholds.malicious}</dd>
             </div>
             <div>
               <dt>Low-confidence threshold</dt>
-              <dd>0.65</dd>
+              <dd>{model.thresholds.low_confidence}</dd>
             </div>
             <div>
               <dt>Retention</dt>
@@ -767,7 +800,7 @@ export function ResultsDashboard({
       </main>
 
       <footer className="dashboard-footer">
-        <span>Fixture-backed Phase 7 preview</span>
+        <span>Live API-v1 analysis</span>
         <span>{response.model.name}</span>
         <span>Uploads are processed in memory.</span>
       </footer>

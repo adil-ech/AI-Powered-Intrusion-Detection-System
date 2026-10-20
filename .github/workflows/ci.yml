@@ -36,6 +36,8 @@ jobs:
           python3 -B scripts/validate_phase4.py
           python3 -B scripts/validate_phase5.py
           python3 -B scripts/validate_phase6.py
+          python3 -B scripts/validate_phase7.py
+          python3 -B scripts/validate_phase8.py
           uv run ruff check backend ml scripts
 
       - name: Type-check Python

@@ -124,7 +124,10 @@ export function downloadTextFile(
   filename: string,
   mimeType: string,
 ): void {
-  const blob = new Blob([contents], { type: mimeType });
+  downloadBlobFile(new Blob([contents], { type: mimeType }), filename);
+}
+
+export function downloadBlobFile(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

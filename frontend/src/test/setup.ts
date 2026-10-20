@@ -34,6 +34,11 @@ Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
   value: vi.fn(() => null),
 });
 
+Object.defineProperty(HTMLAnchorElement.prototype, "click", {
+  configurable: true,
+  value: vi.fn(),
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });

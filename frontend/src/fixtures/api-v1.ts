@@ -2,18 +2,48 @@ import type {
   ApiErrorEnvelope,
   AttackCategory,
   BatchPredictionResponse,
-  FixtureScenario,
+  ModelMetadata,
   Prediction,
   PredictionSummary,
   RiskLevel,
   RowError,
 } from "../types/api";
+import { REQUIRED_FEATURES } from "../lib/csv";
+
+type FixtureScenario =
+  "normal" | "mixed" | "edge" | "empty" | "invalid" | "failure";
 
 const MODEL = {
   name: "cicids2017-two-stage",
   version: "ids-rf-v1.0.0",
   feature_schema_version: "features-v1",
 } as const;
+
+export const FIXTURE_MODEL_METADATA: ModelMetadata = {
+  model_name: MODEL.name,
+  model_version: MODEL.version,
+  artifact_status: "READY",
+  training_dataset: "CIC-IDS2017",
+  feature_schema_version: MODEL.feature_schema_version,
+  feature_schema_hash: "fixture-schema-hash",
+  required_features: [...REQUIRED_FEATURES],
+  attack_categories: [
+    "BENIGN",
+    "DOS_DDOS",
+    "PORT_SCAN",
+    "BRUTE_FORCE",
+    "WEB_ATTACK",
+    "BOTNET",
+    "INFILTRATION",
+    "RARE_OTHER",
+  ],
+  thresholds: {
+    malicious: 0.015,
+    low_confidence: 0.65,
+    high_risk: 0.85,
+  },
+  created_at: "2026-10-01T00:00:00Z",
+};
 
 function prediction(
   rowId: string,

@@ -5,7 +5,7 @@ export UV_CACHE_DIR
 PYTHONPATH ?= $(CURDIR)/ml/src
 export PYTHONPATH
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web build smoke clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 gate-7 ensure-baseline
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web test-e2e build smoke clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 gate-7 gate-8 ensure-baseline
 
 help:
 	@echo "Available targets:"
@@ -15,6 +15,7 @@ help:
 	@echo "  lint          Run contract, Python, and frontend linters"
 	@echo "  typecheck     Run Python and TypeScript type checks"
 	@echo "  test          Run ML, API, and frontend tests"
+	@echo "  test-e2e      Run the real upload-to-export browser journey"
 	@echo "  build         Validate the API import and build the frontend"
 	@echo "  smoke         Build and test the Docker Compose stack"
 	@echo "  data-manifest Record local raw-data checksums (requires RETRIEVED_AT=YYYY-MM-DD)"
@@ -30,6 +31,7 @@ help:
 	@echo "  gate-5        Run Phase 5 checks and verify/finalize the selected artifact"
 	@echo "  gate-6        Run the API contract tests and container smoke test"
 	@echo "  gate-7        Run the fixture frontend contract and quality checks"
+	@echo "  gate-8        Run full tests, builds, smoke, and browser integration"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -53,6 +55,7 @@ lint:
 	python3 -B scripts/validate_phase5.py
 	python3 -B scripts/validate_phase6.py
 	python3 -B scripts/validate_phase7.py
+	python3 -B scripts/validate_phase8.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -68,6 +71,9 @@ test-api:
 
 test-web:
 	npm --prefix frontend test
+
+test-e2e:
+	bash scripts/e2e.sh
 
 test: test-ml test-api test-web
 
@@ -136,6 +142,13 @@ gate-7:
 	npm --prefix frontend run lint
 	npm --prefix frontend test
 	npm --prefix frontend run build
+
+gate-8:
+	python3 -B scripts/validate_phase8.py
+	$(MAKE) test
+	$(MAKE) build
+	$(MAKE) smoke
+	$(MAKE) test-e2e
 
 clean:
 	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage frontend/node_modules/.tmp reports/generated test-results playwright-report .playwright-mcp .taste-skill
