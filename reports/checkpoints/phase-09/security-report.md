@@ -13,7 +13,7 @@
 |---|---|---|
 | Python dependency audit | `uv.lock`, uv 0.12.21 | 43 packages; no known vulnerability or adverse project status |
 | Frontend dependency audit | `frontend/package-lock.json`, npm 11.6.2 | 0 vulnerabilities |
-| Git history secret scan | Gitleaks 8.30.1 | 20 commits / 1.08 MB; no leak |
+| Git history secret scan | Gitleaks 8.30.1 | 21 commits / 1.14 MB; no leak |
 | Working-tree secret scan | Gitleaks 8.30.1 | 1.54 MB; no leak |
 | API image scan | Trivy 0.76.0, Debian 13.7 | 0 critical; 44 high occurrences covered by 8 explicit unfixed exceptions |
 | Frontend image scan | Trivy 0.76.0, Alpine 3.24.2 | 0 critical/high |
