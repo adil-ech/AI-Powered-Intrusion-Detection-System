@@ -13,9 +13,10 @@ WORKDIR /app
 
 COPY --from=uv /uv /uvx /bin/
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --no-install-project --no-cache
 
-COPY backend ./backend
+COPY backend/__init__.py ./backend/__init__.py
+COPY backend/app ./backend/app
 COPY ml/src ./ml/src
 
 RUN addgroup --system app && adduser --system --ingroup app app \

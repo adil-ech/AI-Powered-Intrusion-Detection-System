@@ -152,6 +152,16 @@ def write_artifact(
 def load_artifact(output_dir: Path) -> tuple[InferenceBundle, dict[str, Any]]:
     """Verify every file hash and cross-file identity before deserializing."""
 
+    expected_paths = {*REQUIRED_FILES, "manifest.json"}
+    if not output_dir.is_dir():
+        raise ValueError("artifact path must be a directory")
+    actual_paths = {path.name for path in output_dir.iterdir()}
+    if actual_paths != expected_paths:
+        raise ValueError("artifact directory must contain the exact required files")
+    if any((output_dir / name).is_symlink() for name in expected_paths):
+        raise ValueError("artifact files must not be symbolic links")
+    if any(not (output_dir / name).is_file() for name in expected_paths):
+        raise ValueError("artifact entries must be regular files")
     manifest = _json(output_dir / "manifest.json")
     files = manifest.get("files")
     if not isinstance(files, dict) or set(files) != set(REQUIRED_FILES):

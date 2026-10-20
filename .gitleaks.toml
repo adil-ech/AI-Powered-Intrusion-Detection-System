@@ -1,0 +1,16 @@
+title = "AI-Powered IDS secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated, vendored, and local-only directories"
+paths = [
+  '''(^|/)\.venv/''',
+  '''(^|/)frontend/node_modules/''',
+  '''(^|/)frontend/dist/''',
+  '''(^|/)data/(raw|interim|processed)/''',
+  '''(^|/)models/''',
+  '''(^|/)reports/generated/''',
+  '''(^|/)(test-results|playwright-report|\.cache)/''',
+]

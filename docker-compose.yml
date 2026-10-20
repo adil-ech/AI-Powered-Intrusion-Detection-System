@@ -1,11 +1,17 @@
 services:
   api:
+    image: ids-demo-api:local
     build:
       context: .
       dockerfile: backend/Dockerfile
     environment:
       IDS_CORS_ORIGINS: "${IDS_CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}"
+      IDS_CSV_MAX_ROWS: "${IDS_CSV_MAX_ROWS:-10000}"
+      IDS_JSON_MAX_ROWS: "${IDS_JSON_MAX_ROWS:-1000}"
+      IDS_MAX_COLUMNS: "${IDS_MAX_COLUMNS:-120}"
+      IDS_MAX_UPLOAD_BYTES: "${IDS_MAX_UPLOAD_BYTES:-10485760}"
       IDS_MODEL_DIR: /app/models/ids-rf-v1
+      IDS_PROCESSING_TIMEOUT_SECONDS: "${IDS_PROCESSING_TIMEOUT_SECONDS:-15}"
       PYTHONUNBUFFERED: "1"
     ports:
       - "${API_PORT:-8000}:8000"
@@ -20,10 +26,18 @@ services:
       retries: 12
       start_period: 5s
     init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=16m,mode=1777
     volumes:
       - ./models/ids-rf-v1:/app/models/ids-rf-v1:ro
 
   frontend:
+    image: ids-demo-frontend:local
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -39,3 +53,10 @@ services:
       retries: 12
       start_period: 5s
     init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=16m,mode=1777

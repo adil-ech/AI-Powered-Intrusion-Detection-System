@@ -38,7 +38,11 @@ jobs:
           python3 -B scripts/validate_phase6.py
           python3 -B scripts/validate_phase7.py
           python3 -B scripts/validate_phase8.py
+          python3 -B scripts/validate_phase9.py
           uv run ruff check backend ml scripts
+
+      - name: Audit locked Python dependencies
+        run: uv audit --frozen
 
       - name: Type-check Python
         run: uv run mypy
@@ -76,6 +80,9 @@ jobs:
 
       - name: Build frontend
         run: npm --prefix frontend run build
+
+      - name: Audit locked frontend dependencies
+        run: npm --prefix frontend audit --audit-level=high --package-lock-only
 
   compose:
     runs-on: ubuntu-latest

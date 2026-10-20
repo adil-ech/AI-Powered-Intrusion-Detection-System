@@ -1,6 +1,6 @@
 # AI-Powered Intrusion Detection System
 
-A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, and live React review workflow are implemented through Phase 8.
+A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, live React review workflow, and security-hardened runtime are implemented through Phase 9.
 
 ## Current capabilities
 
@@ -14,6 +14,7 @@ A full-stack machine-learning project that classifies network-flow records as be
 - Validation-only dummy and streaming logistic baselines with explicit class, error-rate, and calibration metrics.
 - Group-aware Random Forest selection, deterministic calibration, and integrity-checked artifact packaging.
 - Strict batch validation, partial-success row errors, correlation IDs, privacy-safe logs, and environment-scoped CORS.
+- Hostile-input limits and processing deadlines, formula-safe exports, read-only non-root containers, locked dependency audits, secret scanning, and image scanning.
 
 The API verifies every file in `models/ids-rf-v1/` at startup. `/health` remains a process-liveness check; `/ready` returns `200` only after the model is integrity-checked and compatible.
 
@@ -115,12 +116,16 @@ docker compose config --quiet
 make smoke
 make test-e2e
 make gate-8
+make security
+make gate-9
 make clean
 ```
 
 `make smoke` creates response files in a temporary directory, always removes that directory, and shuts down its Compose services before exiting.
 
 `make gate-8` validates every repository contract, runs the ML, API, and frontend suites, builds both application layers, smoke-tests the Compose stack, and drives the complete upload-to-export browser journey against the real ignored model artifact. See the [Phase 8 integration guide](docs/frontend/phase-08-integration.md).
+
+`make security` runs negative-input/export tests and the locked dependency, Git history, working-tree, container-user, and high/critical image scans. It requires Docker and internet access to current advisory databases; scanner images are pinned. See the [security and privacy guide](docs/security-privacy.md) for the trust boundaries, data handling guarantees, and accepted residual risks.
 
 ## Project contracts
 

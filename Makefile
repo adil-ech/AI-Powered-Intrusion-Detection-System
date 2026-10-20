@@ -5,7 +5,7 @@ export UV_CACHE_DIR
 PYTHONPATH ?= $(CURDIR)/ml/src
 export PYTHONPATH
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web test-e2e build smoke clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 gate-7 gate-8 ensure-baseline
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web test-e2e test-security build smoke security clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 gate-7 gate-8 gate-9 ensure-baseline
 
 help:
 	@echo "Available targets:"
@@ -16,8 +16,10 @@ help:
 	@echo "  typecheck     Run Python and TypeScript type checks"
 	@echo "  test          Run ML, API, and frontend tests"
 	@echo "  test-e2e      Run the real upload-to-export browser journey"
+	@echo "  test-security Run hostile-input and spreadsheet-export security tests"
 	@echo "  build         Validate the API import and build the frontend"
 	@echo "  smoke         Build and test the Docker Compose stack"
+	@echo "  security      Scan secrets, dependencies, images, and runtime users"
 	@echo "  data-manifest Record local raw-data checksums (requires RETRIEVED_AT=YYYY-MM-DD)"
 	@echo "  audit-data    Audit the complete local CIC-IDS2017 CSV dataset"
 	@echo "  preprocess-data  Build deterministic model-ready train/validation/test inputs"
@@ -32,6 +34,7 @@ help:
 	@echo "  gate-6        Run the API contract tests and container smoke test"
 	@echo "  gate-7        Run the fixture frontend contract and quality checks"
 	@echo "  gate-8        Run full tests, builds, smoke, and browser integration"
+	@echo "  gate-9        Run the complete security, privacy, and resilience gate"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -56,6 +59,7 @@ lint:
 	python3 -B scripts/validate_phase6.py
 	python3 -B scripts/validate_phase7.py
 	python3 -B scripts/validate_phase8.py
+	python3 -B scripts/validate_phase9.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -74,6 +78,10 @@ test-web:
 
 test-e2e:
 	bash scripts/e2e.sh
+
+test-security:
+	uv run pytest backend/tests/test_security.py
+	npm --prefix frontend test -- src/lib/csv.test.ts
 
 test: test-ml test-api test-web
 
@@ -145,6 +153,20 @@ gate-7:
 
 gate-8:
 	python3 -B scripts/validate_phase8.py
+	$(MAKE) test
+	$(MAKE) build
+	$(MAKE) smoke
+	$(MAKE) test-e2e
+
+security:
+	python3 -B scripts/validate_phase9.py
+	$(MAKE) test-security
+	uv audit --frozen
+	npm --prefix frontend audit --audit-level=high --package-lock-only
+	bash scripts/security.sh
+
+gate-9:
+	$(MAKE) security
 	$(MAKE) test
 	$(MAKE) build
 	$(MAKE) smoke

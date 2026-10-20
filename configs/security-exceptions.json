@@ -1,0 +1,69 @@
+{
+  "schema_version": "security-exceptions-v1",
+  "exceptions": [
+    {
+      "id": "CVE-2025-69720",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the issue is in the infocmp CLI, which the API never invokes.",
+      "compensating_controls": "The container is non-root, read-only, capability-free, no-new-privileges, and exposes only Uvicorn."
+    },
+    {
+      "id": "CVE-2026-16742",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; systemd-homed is not started or exposed by the API image.",
+      "compensating_controls": "The container is non-root, read-only, capability-free, no-new-privileges, and runs one application process."
+    },
+    {
+      "id": "CVE-2026-54369",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the local privileged libacl pathname scenario is outside the network inference path.",
+      "compensating_controls": "The container is non-root, read-only, capability-free, no-new-privileges, and receives no writable host path."
+    },
+    {
+      "id": "CVE-2026-76642",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the vulnerable privileged mount helper and post-hook path is not invoked.",
+      "compensating_controls": "All capabilities are dropped, no-new-privileges is set, and the root filesystem and model mount are read-only."
+    },
+    {
+      "id": "CVE-2026-78408",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the nsenter cgroup authority path is not present in the application workflow.",
+      "compensating_controls": "The container is non-root, capability-free, no-new-privileges, and has no host namespace access."
+    },
+    {
+      "id": "CVE-2026-78409",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the mount subdirectory symlink-resolution path is not invoked.",
+      "compensating_controls": "The container is non-root, capability-free, no-new-privileges, and receives no writable host path."
+    },
+    {
+      "id": "CVE-2026-78410",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the restricted bind-mount post-hook path is not invoked.",
+      "compensating_controls": "All capabilities are dropped, no-new-privileges is set, and the root filesystem and model mount are read-only."
+    },
+    {
+      "id": "CVE-2026-9538",
+      "images": ["api"],
+      "owner": "project maintainer",
+      "expires_on": "2026-11-20",
+      "rationale": "Debian 13.7 has no fixed package; the API does not invoke Perl Archive::Tar and rejects archive uploads.",
+      "compensating_controls": "Only bounded UTF-8 CSV or JSON is accepted; archives and model uploads are rejected before inference."
+    }
+  ]
+}

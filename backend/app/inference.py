@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import math
+import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +39,15 @@ ALLOWED_CATEGORIES = {
     "INFILTRATION",
     "RARE_OTHER",
 }
+
+
+def _check_deadline(deadline: float | None) -> None:
+    if deadline is not None and time.monotonic() > deadline:
+        raise APIError(
+            504,
+            "PROCESSING_TIMEOUT",
+            "The request exceeded the configured processing time limit.",
+        )
 
 
 @dataclass(frozen=True)
@@ -180,8 +190,13 @@ class InferenceService:
         }
 
     def validate_json(
-        self, records: list[PredictionInputRecord], *, max_rows: int
+        self,
+        records: list[PredictionInputRecord],
+        *,
+        max_rows: int,
+        deadline: float | None = None,
     ) -> ValidatedBatch:
+        _check_deadline(deadline)
         if not records:
             raise APIError(400, "EMPTY_INPUT", "At least one record is required.")
         if len(records) > max_rows:
@@ -198,6 +213,7 @@ class InferenceService:
         errors: list[RowError] = []
         extras: set[str] = set()
         for row_id, record in zip(row_ids, records, strict=True):
+            _check_deadline(deadline)
             raw_names = list(record.features)
             names, duplicates = _canonical_names(raw_names)
             if duplicates:
@@ -245,7 +261,15 @@ class InferenceService:
         warnings = (_extra_warning(extras),) if extras else ()
         return self._finish_validation(len(records), valid, errors, warnings)
 
-    def validate_csv(self, payload: bytes, *, max_rows: int, max_columns: int) -> ValidatedBatch:
+    def validate_csv(
+        self,
+        payload: bytes,
+        *,
+        max_rows: int,
+        max_columns: int,
+        deadline: float | None = None,
+    ) -> ValidatedBatch:
+        _check_deadline(deadline)
         if not payload:
             raise APIError(400, "EMPTY_INPUT", "The uploaded CSV is empty.")
         try:
@@ -258,13 +282,15 @@ class InferenceService:
             ) from error
         if "\x00" in text:
             raise APIError(400, "INVALID_CSV", "The uploaded file is not a valid CSV.")
+        reader = csv.reader(io.StringIO(text, newline=""), strict=True)
         try:
-            parsed = list(csv.reader(io.StringIO(text, newline=""), strict=True))
+            raw_header = next(reader)
+        except StopIteration as error:
+            raise APIError(400, "EMPTY_INPUT", "The uploaded CSV has no header.") from error
         except (csv.Error, UnicodeError) as error:
             raise APIError(400, "INVALID_CSV", "The uploaded file is not a valid CSV.") from error
-        if not parsed or not parsed[0] or not any(cell.strip() for cell in parsed[0]):
+        if not raw_header or not any(cell.strip() for cell in raw_header):
             raise APIError(400, "EMPTY_INPUT", "The uploaded CSV has no header.")
-        raw_header = parsed[0]
         if len(raw_header) > max_columns:
             raise APIError(
                 413,
@@ -292,16 +318,26 @@ class InferenceService:
                 "The uploaded CSV is missing required columns.",
                 details={"columns": missing},
             )
-        data_rows = [row for row in parsed[1:] if row and any(cell.strip() for cell in row)]
+        data_rows: list[list[str]] = []
+        try:
+            for row in reader:
+                _check_deadline(deadline)
+                if not row or not any(cell.strip() for cell in row):
+                    continue
+                data_rows.append(row)
+                if len(data_rows) > max_rows:
+                    raise APIError(
+                        413,
+                        "TOO_MANY_ROWS",
+                        f"CSV files may contain at most {max_rows} data rows.",
+                        details={"maximum_rows": max_rows},
+                    )
+        except APIError:
+            raise
+        except (csv.Error, UnicodeError) as error:
+            raise APIError(400, "INVALID_CSV", "The uploaded file is not a valid CSV.") from error
         if not data_rows:
             raise APIError(400, "EMPTY_INPUT", "The uploaded CSV has no data rows.")
-        if len(data_rows) > max_rows:
-            raise APIError(
-                413,
-                "TOO_MANY_ROWS",
-                f"CSV files may contain at most {max_rows} data rows.",
-                details={"maximum_rows": max_rows},
-            )
         if any(len(row) != len(header) for row in data_rows):
             raise APIError(
                 400,
@@ -318,6 +354,7 @@ class InferenceService:
         valid: list[ValidatedRow] = []
         errors: list[RowError] = []
         for row_id, row in zip(row_ids, data_rows, strict=True):
+            _check_deadline(deadline)
             values: list[float] = []
             invalid: list[str] = []
             for feature in self.bundle.required_features:
@@ -378,16 +415,25 @@ class InferenceService:
             warnings=warnings,
         )
 
-    def predict(self, batch: ValidatedBatch, *, request_id: str) -> BatchPredictionResponse:
+    def predict(
+        self,
+        batch: ValidatedBatch,
+        *,
+        request_id: str,
+        deadline: float | None = None,
+    ) -> BatchPredictionResponse:
+        _check_deadline(deadline)
         matrix = np.asarray([row.values for row in batch.rows], dtype=np.float64)
         binary, families = self.bundle.predict_probabilities(
             matrix, list(self.bundle.required_features)
         )
+        _check_deadline(deadline)
         predictions: list[Prediction] = []
         counts: Counter[str] = Counter()
         high_risk = 0
         suspicious_rows = 0
         for index, row in enumerate(batch.rows):
+            _check_deadline(deadline)
             malicious_probability = float(binary[index])
             suspicious = malicious_probability >= self.bundle.malicious_threshold
             category_confidence: float | None = None

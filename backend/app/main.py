@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import uuid
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Annotated, Any, cast
 
 from fastapi import FastAPI, File, Request, UploadFile, status
@@ -15,7 +16,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, Response
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.config import Settings
 from backend.app.errors import APIError, error_response, request_id
@@ -32,6 +35,121 @@ from backend.app.schemas import (
 LOGGER = logging.getLogger("ids_api")
 ACCESS_LOGGER = logging.getLogger("ids_api.access")
 CSV_MEDIA_TYPES = {"text/csv", "application/csv", "application/vnd.ms-excel"}
+PREDICTION_PATHS = {"/api/v1/predictions", "/api/v1/predictions/file"}
+MULTIPART_OVERHEAD_BYTES = 256 * 1024
+
+
+class RequestGuardMiddleware:
+    """Bound request bodies, add correlation/security headers, and log metadata only."""
+
+    def __init__(self, app: ASGIApp, *, settings: Settings) -> None:
+        self.app = app
+        self.settings = settings
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        identifier = f"req_{uuid.uuid4().hex}"
+        scope.setdefault("state", {})["request_id"] = identifier
+        headers = Headers(scope=scope)
+        path = str(scope.get("path", ""))
+        method = str(scope.get("method", ""))
+        protected = method == "POST" and path in PREDICTION_PATHS
+        request_limit = self.settings.max_upload_bytes + MULTIPART_OVERHEAD_BYTES
+        status_code = 500
+        error_code: str | None = None
+        response_started = False
+
+        async def guarded_send(message: Message) -> None:
+            nonlocal status_code, error_code, response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+                status_code = int(message["status"])
+                response_headers = MutableHeaders(scope=message)
+                response_headers["X-Request-ID"] = identifier
+                response_headers["X-Content-Type-Options"] = "nosniff"
+                response_headers["X-Frame-Options"] = "DENY"
+                response_headers["Referrer-Policy"] = "no-referrer"
+                response_headers["Cache-Control"] = "no-store"
+                error_code = response_headers.get("X-Error-Code")
+            await send(message)
+
+        def too_large() -> APIError:
+            return APIError(
+                413,
+                "FILE_TOO_LARGE",
+                "The request exceeds the configured byte limit.",
+                details={"maximum_request_bytes": request_limit},
+            )
+
+        async def reject(error: APIError) -> None:
+            request = Request(scope)
+            await error_response(request, error)(scope, receive, guarded_send)
+
+        content_length = headers.get("content-length")
+        if protected and content_length is not None:
+            try:
+                declared_size = int(content_length)
+            except ValueError:
+                declared_size = -1
+            if declared_size < 0:
+                await reject(
+                    APIError(
+                        400,
+                        "INVALID_REQUEST",
+                        "Content-Length must be a non-negative integer.",
+                    )
+                )
+                self._log(identifier, method, path, status_code, error_code)
+                return
+            if declared_size > request_limit:
+                await reject(too_large())
+                self._log(identifier, method, path, status_code, error_code)
+                return
+
+        received = 0
+
+        async def limited_receive() -> Message:
+            nonlocal received
+            message = await receive()
+            if protected and message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > request_limit:
+                    raise too_large()
+            return message
+
+        try:
+            await self.app(scope, limited_receive, guarded_send)
+        except APIError as error:
+            if response_started:
+                raise
+            await reject(error)
+        finally:
+            self._log(identifier, method, path, status_code, error_code)
+
+    @staticmethod
+    def _log(
+        identifier: str,
+        method: str,
+        path: str,
+        status_code: int,
+        error_code: str | None,
+    ) -> None:
+        ACCESS_LOGGER.info(
+            json.dumps(
+                {
+                    "event": "request_complete",
+                    "request_id": identifier,
+                    "method": method,
+                    "path": path,
+                    "status_code": status_code,
+                    "error_code": error_code,
+                },
+                sort_keys=True,
+            )
+        )
 
 
 def _unavailable() -> APIError:
@@ -76,6 +194,7 @@ def create_app(
             "Scores are decision support, not proof of an attack."
         ),
         lifespan=lifespan,
+        debug=False,
     )
     application.state.model_service = None
     application.state.model_error = "model_not_loaded"
@@ -93,52 +212,7 @@ def create_app(
             "X-Feature-Schema-Hash",
         ],
     )
-
-    @application.middleware("http")
-    async def correlation_and_logging(request: Request, call_next: Any) -> Response:
-        identifier = f"req_{uuid.uuid4().hex}"
-        request.state.request_id = identifier
-        content_length = request.headers.get("content-length")
-        if content_length is not None:
-            try:
-                declared_size = int(content_length)
-            except ValueError:
-                declared_size = -1
-            path = request.url.path
-            if declared_size < 0:
-                response = error_response(
-                    request,
-                    APIError(400, "INVALID_REQUEST", "Content-Length must be a positive integer."),
-                )
-            elif path == "/api/v1/predictions" and declared_size > runtime.max_upload_bytes:
-                response = error_response(
-                    request,
-                    APIError(
-                        413,
-                        "FILE_TOO_LARGE",
-                        "The request exceeds the 10 MiB limit.",
-                        details={"maximum_bytes": runtime.max_upload_bytes},
-                    ),
-                )
-            else:
-                response = await call_next(request)
-        else:
-            response = await call_next(request)
-        response.headers["X-Request-ID"] = identifier
-        ACCESS_LOGGER.info(
-            json.dumps(
-                {
-                    "event": "request_complete",
-                    "request_id": identifier,
-                    "method": request.method,
-                    "path": request.url.path,
-                    "status_code": response.status_code,
-                    "error_code": response.headers.get("X-Error-Code"),
-                },
-                sort_keys=True,
-            )
-        )
-        return response
+    application.add_middleware(RequestGuardMiddleware, settings=runtime)
 
     @application.exception_handler(APIError)
     async def handle_api_error(request: Request, error: APIError) -> JSONResponse:
@@ -270,9 +344,18 @@ def create_app(
     )
     def predict_json(payload: PredictionRequest, request: Request) -> BatchPredictionResponse:
         loaded = service()
-        batch = loaded.validate_json(payload.records, max_rows=runtime.json_max_rows)
+        deadline = time.monotonic() + runtime.processing_timeout_seconds
+        batch = loaded.validate_json(
+            payload.records,
+            max_rows=runtime.json_max_rows,
+            deadline=deadline,
+        )
         try:
-            return loaded.predict(batch, request_id=request_id(request))
+            return loaded.predict(
+                batch,
+                request_id=request_id(request),
+                deadline=deadline,
+            )
         except APIError:
             raise
         except Exception as error:
@@ -304,36 +387,64 @@ def create_app(
         ],
     ) -> BatchPredictionResponse:
         loaded = service()
-        media_type = (file.content_type or "").split(";", maxsplit=1)[0].strip().lower()
-        if media_type not in CSV_MEDIA_TYPES:
-            raise APIError(
-                415,
-                "UNSUPPORTED_MEDIA_TYPE",
-                "The uploaded file must use a CSV media type.",
-            )
-        payload = await file.read(runtime.max_upload_bytes + 1)
-        if len(payload) > runtime.max_upload_bytes:
-            raise APIError(
-                413,
-                "FILE_TOO_LARGE",
-                "CSV files may not exceed 10 MiB.",
-                details={"maximum_bytes": runtime.max_upload_bytes},
-            )
-        batch = loaded.validate_csv(
-            payload,
-            max_rows=runtime.csv_max_rows,
-            max_columns=runtime.max_columns,
-        )
+        deadline = time.monotonic() + runtime.processing_timeout_seconds
         try:
-            return loaded.predict(batch, request_id=request_id(request))
-        except APIError:
-            raise
-        except Exception as error:
-            raise APIError(
-                500,
-                "INFERENCE_FAILED",
-                "The model could not score this request.",
-            ) from error
+            filename = file.filename or ""
+            if "/" in filename or "\\" in filename or PurePath(filename).name != filename:
+                raise APIError(
+                    400,
+                    "INVALID_FILENAME",
+                    "The uploaded filename must not contain a path.",
+                )
+            if PurePath(filename).suffix.casefold() != ".csv":
+                raise APIError(
+                    415,
+                    "UNSUPPORTED_FILE_TYPE",
+                    "The uploaded file must have a .csv extension.",
+                )
+            media_type = (file.content_type or "").split(";", maxsplit=1)[0].strip().lower()
+            if media_type not in CSV_MEDIA_TYPES:
+                raise APIError(
+                    415,
+                    "UNSUPPORTED_MEDIA_TYPE",
+                    "The uploaded file must use a CSV media type.",
+                )
+            payload = await file.read(runtime.max_upload_bytes + 1)
+            if len(payload) > runtime.max_upload_bytes:
+                raise APIError(
+                    413,
+                    "FILE_TOO_LARGE",
+                    "CSV files may not exceed the configured byte limit.",
+                    details={"maximum_bytes": runtime.max_upload_bytes},
+                )
+            if time.monotonic() > deadline:
+                raise APIError(
+                    504,
+                    "PROCESSING_TIMEOUT",
+                    "The request exceeded the configured processing time limit.",
+                )
+            batch = loaded.validate_csv(
+                payload,
+                max_rows=runtime.csv_max_rows,
+                max_columns=runtime.max_columns,
+                deadline=deadline,
+            )
+            try:
+                return loaded.predict(
+                    batch,
+                    request_id=request_id(request),
+                    deadline=deadline,
+                )
+            except APIError:
+                raise
+            except Exception as error:
+                raise APIError(
+                    500,
+                    "INFERENCE_FAILED",
+                    "The model could not score this request.",
+                ) from error
+        finally:
+            await file.close()
 
     def custom_openapi() -> dict[str, Any]:
         if application.openapi_schema is not None:
