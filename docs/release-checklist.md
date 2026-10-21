@@ -3,6 +3,8 @@
 Release candidate: `0.1.0`
 
 Checkpoint date: 2026-10-21
+Tested commit: `3ea8064b37ef257818de832f6c7603b97ef7194c`
+Result: `PASS`
 
 ## Scope and evidence
 
@@ -27,18 +29,18 @@ Checkpoint date: 2026-10-21
 The release owner must run the following from the exact clean candidate commit and
 record its hash in the Phase 11 checkpoint:
 
-- [ ] `make format-check`
-- [ ] `make lint`
-- [ ] `make typecheck`
-- [ ] `make test`
-- [ ] `make build`
-- [ ] `make security`
-- [ ] `make smoke`
-- [ ] `make test-e2e`
-- [ ] `make release-check`
-- [ ] Manual README journey, sample explanation, filtered export, shutdown, and
+- [x] `make format-check`
+- [x] `make lint`
+- [x] `make typecheck`
+- [x] `make test`
+- [x] `make build`
+- [x] `make security`
+- [x] `make smoke`
+- [x] `make test-e2e`
+- [x] `make release-check`
+- [x] Manual README journey, sample explanation, filtered export, shutdown, and
   first-time-evaluator review
 
-Do not tag or describe the project as a release candidate until every final item passes.
+All final items passed on the exact commit above. No Git tag is created automatically.
 Any code, model, contract, dependency, or runtime change after the tested commit requires
 the affected gate and all downstream release checks to be rerun.

@@ -1,6 +1,6 @@
 # AI-Powered Intrusion Detection System
 
-A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, live React review workflow, security-hardened runtime, and reproducible deployment are implemented through Phase 10. The Phase 11 release-candidate gate is pending.
+A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, live React review workflow, security-hardened runtime, and reproducible deployment have passed all eleven implementation phases. Version `0.1.0` is the verified MVP release candidate.
 
 > This is an educational batch-analysis demo, not a packet sniffer, autonomous blocker,
 > production IDS, or SIEM replacement. Predictions require analyst review and describe
