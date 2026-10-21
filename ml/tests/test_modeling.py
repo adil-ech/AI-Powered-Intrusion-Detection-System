@@ -186,18 +186,34 @@ def test_artifact_integrity_column_reordering_and_batch_parity(tmp_path: Path) -
     )
     taxonomy = tmp_path / "labels.json"
     taxonomy.write_text(json.dumps({"categories": ["BENIGN", "A", "B", "C"]}), encoding="utf-8")
+    metadata = {
+        "artifact_schema_version": "1.0.0",
+        "model_version": "test-v1",
+        "feature_schema_hash": "a" * 64,
+    }
+    metrics = {"status": "test"}
     output = tmp_path / "artifact"
-    write_artifact(
+    first_manifest = write_artifact(
         output,
         bundle,
-        metadata={
-            "artifact_schema_version": "1.0.0",
-            "model_version": "test-v1",
-            "feature_schema_hash": "a" * 64,
-        },
-        metrics={"status": "test"},
+        metadata=metadata,
+        metrics=metrics,
         feature_schema_path=feature_schema,
         label_taxonomy_path=taxonomy,
+    )
+    repeated = tmp_path / "artifact-repeated"
+    second_manifest = write_artifact(
+        repeated,
+        bundle,
+        metadata=metadata,
+        metrics=metrics,
+        feature_schema_path=feature_schema,
+        label_taxonomy_path=taxonomy,
+    )
+    assert first_manifest == second_manifest
+    assert all(
+        (output / name).read_bytes() == (repeated / name).read_bytes()
+        for name in (*first_manifest["files"], "manifest.json")
     )
     loaded, _ = load_artifact(output)
     ordered = np.asarray([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)

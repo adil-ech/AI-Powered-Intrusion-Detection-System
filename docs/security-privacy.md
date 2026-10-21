@@ -110,6 +110,6 @@ control in the Phase 9 security report.
 - CIC-IDS2017 is a controlled 2017 dataset. Model error, concept drift, evasion, and
   low-support attack families remain operational risks; predictions require analyst
   review and must not trigger autonomous blocking.
-- The public page requests Jost from Google Fonts, which discloses ordinary web-request
-  metadata to that provider. The system-font fallback works when external fonts are
-  blocked; a later offline packaging gate should remove this dependency.
+- Jost is packaged locally under the SIL Open Font License, so the runtime page makes no
+  third-party font request. The browser still has a system sans-serif fallback if the
+  local asset cannot load.

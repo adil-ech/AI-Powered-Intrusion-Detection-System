@@ -4,15 +4,16 @@ set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 temporary_directory="$(mktemp -d)"
+compose=(docker compose --project-directory "${project_root}" --env-file "${project_root}/.env.example")
 
 cleanup() {
-  docker compose --project-directory "${project_root}" down --remove-orphans >/dev/null 2>&1 || true
+  "${compose[@]}" down --remove-orphans >/dev/null 2>&1 || true
   rm -rf "${temporary_directory}"
 }
 
 trap cleanup EXIT
 
-docker compose --project-directory "${project_root}" up --build --detach --wait
+"${compose[@]}" up --build --detach --wait
 
 curl --fail --silent --show-error \
   --noproxy '*' \

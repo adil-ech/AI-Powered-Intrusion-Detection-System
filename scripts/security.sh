@@ -6,9 +6,10 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 temporary_directory="$(mktemp -d)"
 trivy_image="aquasec/trivy:0.76.0"
 gitleaks_image="ghcr.io/gitleaks/gitleaks:v8.30.1"
+compose=(docker compose --project-directory "${project_root}" --env-file "${project_root}/.env.example")
 
 cleanup() {
-  docker compose --project-directory "${project_root}" down --remove-orphans >/dev/null 2>&1 || true
+  "${compose[@]}" down --remove-orphans >/dev/null 2>&1 || true
   rm -rf "${temporary_directory}"
 }
 
@@ -41,7 +42,7 @@ docker run --rm --network none \
   --workdir /repo \
   "${gitleaks_image}" detect --source=/repo --no-git --redact --no-banner
 
-docker compose --project-directory "${project_root}" build
+"${compose[@]}" build
 
 api_image="ids-demo-api:local"
 frontend_image="ids-demo-frontend:local"

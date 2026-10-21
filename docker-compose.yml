@@ -26,6 +26,9 @@ services:
       retries: 12
       start_period: 5s
     init: true
+    cpus: "${API_CPU_LIMIT:-2.0}"
+    mem_limit: "${API_MEMORY_LIMIT:-768m}"
+    pids_limit: 256
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -34,7 +37,7 @@ services:
     tmpfs:
       - /tmp:size=16m,mode=1777
     volumes:
-      - ./models/ids-rf-v1:/app/models/ids-rf-v1:ro
+      - "${IDS_MODEL_HOST_DIR:-./models/ids-rf-v1}:/app/models/ids-rf-v1:ro"
 
   frontend:
     image: ids-demo-frontend:local
@@ -53,6 +56,9 @@ services:
       retries: 12
       start_period: 5s
     init: true
+    cpus: "${FRONTEND_CPU_LIMIT:-0.5}"
+    mem_limit: "${FRONTEND_MEMORY_LIMIT:-128m}"
+    pids_limit: 128
     read_only: true
     security_opt:
       - no-new-privileges:true
