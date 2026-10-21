@@ -1,7 +1,7 @@
 # Model card: CIC-IDS2017 two-stage Random Forest
 
 - Model version: `ids-rf-v1.0.0`
-- Status: frozen Gate 5 MVP candidate; one-time final-test evaluation complete
+- Status: frozen model for the `0.1.0` MVP release candidate; one-time final-test evaluation complete
 - Intended use: batch classification of CICFlowMeter-compatible network-flow features for an educational intrusion-detection demo
 - Out of scope: packet capture, automated blocking, novel-attack detection, production SIEM replacement, and claims of real-world generalization
 
@@ -36,6 +36,11 @@ It beats the same-row dummy and logistic baselines and passes the preregistered 
 - Attack-family calibration: deterministic temperature scaling over all contract columns
 
 These scores describe behavior on CIC-IDS2017-derived grouped splits; they are not guarantees for a different network.
+
+The confidence displayed by the product is the benign probability for benign rows and
+the product of malicious probability and conditional family probability for suspicious
+rows. It is a calibrated ranking and review aid, not a causal explanation, exploit
+proof, or guarantee that a flow is safe or malicious.
 
 ## Data and limitations
 
@@ -90,3 +95,25 @@ The binary confusion matrix, ordered `[benign, malicious]`, is `[[358842, 3377],
 - Created at: `2026-10-19T17:00:19.120335Z`
 
 The artifact reloaded successfully and matched both binary and family probabilities within `1e-12` on 8,192 selection rows. Subsequent Gate 5 runs verify the saved hashes and metrics without reopening final-test rows for predictions.
+
+## Dataset citation
+
+The model was trained only on the CIC-IDS2017 machine-learning CSV release. Cite the
+official dataset page and the accompanying paper:
+
+> Iman Sharafaldin, Arash Habibi Lashkari, and Ali A. Ghorbani, “Toward Generating a
+> New Intrusion Detection Dataset and Intrusion Traffic Characterization,” 4th
+> International Conference on Information Systems Security and Privacy (ICISSP), 2018.
+
+The official source, archive hashes, retrieval procedure, and redistribution statement
+are recorded in the [dataset guide](data/cic-ids2017.md).
+
+## Release use and review
+
+- Use predictions only to prioritize human review of CICFlowMeter-compatible records.
+- Do not use this model for autonomous blocking, disciplinary action, attribution, or
+  claims that a network is free of compromise.
+- Monitor feature drift, category support, calibration, false positives, and false
+  negatives before evaluating any deployment beyond this educational demo.
+- Retraining, taxonomy changes, or a new dataset require a new artifact version and a
+  complete gated evaluation cycle; they must not overwrite `ids-rf-v1.0.0`.

@@ -1,6 +1,12 @@
 # AI-Powered Intrusion Detection System
 
-A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, live React review workflow, security-hardened runtime, and reproducible deployment are implemented through Phase 10.
+A full-stack machine-learning project that classifies network-flow records as benign or suspicious and categorizes supported attacks. Its audited CIC-IDS2017 pipeline, calibrated Random Forest artifact, versioned FastAPI service, live React review workflow, security-hardened runtime, and reproducible deployment are implemented through Phase 10. The Phase 11 release-candidate gate is pending.
+
+> This is an educational batch-analysis demo, not a packet sniffer, autonomous blocker,
+> production IDS, or SIEM replacement. Predictions require analyst review and describe
+> behavior learned from a controlled 2017 dataset.
+
+![Live six-row traffic review showing summary metrics, attack-family distribution, confidence, and row-level results](reports/checkpoints/phase-08/browser/live-results-desktop.png)
 
 ## Current capabilities
 
@@ -18,6 +24,27 @@ A full-stack machine-learning project that classifies network-flow records as be
 - Digest-pinned multi-stage images, explicit CPU/memory/PID limits, offline frontend assets, and clean-checkout performance benchmarking.
 
 The API verifies every file in `models/ids-rf-v1/` at startup. `/health` remains a process-liveness check; `/ready` returns `200` only after the model is integrity-checked and compatible.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[CIC-IDS2017 CSVs] --> B[Audit and grouped split]
+    B --> C[Train-fitted preprocessing]
+    C --> D[Two-stage Random Forest]
+    D --> E[Integrity-checked artifact]
+    U[Browser] --> W[Nginx and React]
+    W --> F[FastAPI validation]
+    F --> E
+    F --> P[Predictions and safe errors]
+    P --> W
+```
+
+The browser sends a bounded CSV or JSON batch to FastAPI. The API validates the schema,
+scores valid rows with the read-only artifact, and returns predictions without retaining
+the upload. Training inputs and generated artifacts remain outside Git. See the
+[architecture and data-flow guide](docs/architecture.md) for component, trust-boundary,
+and deployment diagrams.
 
 ## Dataset audit
 
@@ -62,6 +89,32 @@ Choose either:
 
 - Docker with Docker Compose; or
 - Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 24 LTS, and npm.
+
+The production model is deliberately not stored in Git. A runnable checkout needs the
+exact six-file `ids-rf-v1.0.0` artifact produced by `make finalize-model`, either at
+`models/ids-rf-v1/` or at the absolute directory named by `IDS_MODEL_HOST_DIR`. Do not
+load a `joblib` artifact from an untrusted source.
+
+## Quick start with Docker
+
+```bash
+git clone https://github.com/adil-ech/AI-Powered-Intrusion-Detection-System.git
+cd AI-Powered-Intrusion-Detection-System
+cp .env.example .env
+# Place the trusted artifact at models/ids-rf-v1/, or set IDS_MODEL_HOST_DIR.
+docker compose up --build --detach --wait
+```
+
+Open <http://localhost:8080>, choose **Review included sample**, and expect six valid
+rows: one benign and five suspicious across DoS/DDoS, port scan, brute force, web
+attack, and botnet. Stop and remove the stateless services with:
+
+```bash
+docker compose down --remove-orphans
+```
+
+The [five-minute demonstration script](docs/demo-script.md) explains one result,
+filtering, export, model identity, and the product limitations.
 
 ## Local development
 
@@ -108,6 +161,39 @@ Stop the stack with:
 docker compose down --remove-orphans
 ```
 
+## API examples
+
+Inspect the loaded model and thresholds:
+
+```bash
+curl --fail --silent http://localhost:8000/api/v1/model | python3 -m json.tool
+```
+
+Submit the bundled safe sample:
+
+```bash
+curl --fail --silent \
+  -F "file=@frontend/public/samples/ids-demo-mixed.csv;type=text/csv" \
+  http://localhost:8000/api/v1/predictions/file | python3 -m json.tool
+```
+
+The response should report `6` valid rows, `5` suspicious rows, model version
+`ids-rf-v1.0.0`, and no row errors. Full JSON/CSV schemas, limits, and error behavior
+are documented in the [inference API guide](docs/api-inference-v1.md); interactive
+OpenAPI documentation is served at <http://localhost:8000/docs>.
+
+## Measured model and runtime behavior
+
+On the sealed final-test split, malicious recall was `0.999616`, false-positive rate
+was `0.009323`, and observed-family macro F1 was `0.918035`. `INFILTRATION` recall was
+only `0.375` on eight examples, while `RARE_OTHER` had no honest test support. These
+in-dataset measurements must not be interpreted as contemporary-network guarantees.
+
+On the Phase 10 arm64 reference host, 10,000-row inference had a `0.905s` p95 over five
+runs, API memory peaked at `228.60 MiB`, and clean startup took `12.128s`. See the
+[model card](docs/model-card.md) and [performance report](reports/checkpoints/phase-10/performance-report.md)
+for the complete metrics, supports, method, and limitations.
+
 ## Quality commands
 
 ```bash
@@ -124,6 +210,8 @@ make security
 make gate-9
 make performance
 make gate-10
+make release-check
+make gate-11
 make clean
 ```
 
@@ -139,11 +227,42 @@ requests, verifies concurrent isolation, records memory/image/response/asset siz
 restarts the stack. See the [deployment and performance guide](docs/deployment-performance.md)
 for the resource envelope, model-path contract, benchmark method, and budgets.
 
+`make release-check` requires a clean committed checkout and the trusted model
+artifact. It verifies the final documentation contract, all earlier PASS checkpoints,
+Compose configuration, repository boundaries, safe sample, and exact artifact hashes.
+`make gate-11` runs the complete release sequence.
+
+## Supported environment and browsers
+
+- Reference host: macOS 26.2 arm64, Docker 29.8.2, Python 3.12.14, uv 0.12.21,
+  Node 25.2.1, and npm 11.6.2.
+- Container toolchains: Python 3.12 slim and Node 24 Alpine, pinned by digest.
+- Browser release gate: current Chromium through Playwright at desktop, tablet, and
+  mobile widths. Current Chrome and Chromium-based Edge are the supported demo
+  browsers. Firefox and Safari are expected to work but are not release-certified.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| API stays unhealthy | Confirm the six model files exist, `manifest.json` hashes match, and `IDS_MODEL_HOST_DIR` is an absolute trusted path when outside the repository. |
+| Port 8000 or 8080 is busy | Change `API_PORT` or `FRONTEND_PORT` in `.env`, then recreate the stack. |
+| Frontend reports model unavailable | Open `/ready`, inspect `docker compose logs api`, and confirm the frontend and API use the same Compose project. |
+| CSV is rejected | Start from `/api/v1/input-template`; keep all 63 required numeric features and stay under 10 MiB and 10,000 rows. |
+| Browser tests cannot launch | Run `npx --prefix frontend playwright install chromium`. |
+| Security checks cannot refresh | Restore registry/advisory network access and rerun; the release gate does not silently skip audits. |
+| Local output should be removed | Run `docker compose down --remove-orphans` followed by `make clean`. |
+
 ## Project contracts
 
 - [Project plan](PROJECT_PLAN.md)
 - [Gated implementation workflow](IMPLEMENTATION_WORKFLOW.md)
 - [API contract](docs/api-contract.md)
+- [Architecture and data flow](docs/architecture.md)
+- [Model card](docs/model-card.md)
+- [Demonstration script](docs/demo-script.md)
+- [Release checklist](docs/release-checklist.md)
+- [Changelog](CHANGELOG.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Phase checkpoints](reports/checkpoints/)
 
@@ -151,6 +270,8 @@ for the resource envelope, model-path contract, benchmark method, and budgets.
 
 The full CIC-IDS2017 dataset and generated model artifacts are intentionally excluded from Git. See [data/README.md](data/README.md) and [models/README.md](models/README.md) before adding local files.
 
-## License
+## License and notices
 
-MIT. See [LICENSE](LICENSE).
+Project code is MIT licensed. See [LICENSE](LICENSE),
+[third-party notices](THIRD_PARTY_NOTICES.md), and the
+[CIC-IDS2017 citation and acquisition guide](docs/data/cic-ids2017.md).

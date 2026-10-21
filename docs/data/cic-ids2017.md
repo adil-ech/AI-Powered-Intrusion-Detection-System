@@ -8,6 +8,17 @@ Required citation:
 
 > Iman Sharafaldin, Arash Habibi Lashkari, and Ali A. Ghorbani, “Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization,” 4th International Conference on Information Systems Security and Privacy (ICISSP), Portugal, 2018.
 
+BibTeX form used by this project:
+
+```bibtex
+@inproceedings{sharafaldin2018intrusion,
+  author    = {Iman Sharafaldin and Arash Habibi Lashkari and Ali A. Ghorbani},
+  title     = {Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization},
+  booktitle = {Proceedings of the 4th International Conference on Information Systems Security and Privacy},
+  year      = {2018}
+}
+```
+
 The [CIC dataset FAQ](https://www.unb.ca/cic/datasets/index.html) states that CIC datasets may be redistributed, republished, and mirrored when the dataset and listed research paper are cited.
 
 ## Download procedure

@@ -5,7 +5,7 @@ export UV_CACHE_DIR
 PYTHONPATH ?= $(CURDIR)/ml/src
 export PYTHONPATH
 
-.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web test-e2e test-security build smoke security performance clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 gate-7 gate-8 gate-9 gate-10 ensure-baseline
+.PHONY: help setup format format-check lint typecheck test test-ml test-api test-web test-e2e test-security build smoke security performance release-check clean data-manifest audit-data preprocess-data baseline-report port-variant model-selection-report finalize-model gate-2 gate-3 gate-4 gate-5 gate-6 gate-7 gate-8 gate-9 gate-10 gate-11 ensure-baseline
 
 help:
 	@echo "Available targets:"
@@ -21,6 +21,7 @@ help:
 	@echo "  smoke         Build and test the Docker Compose stack"
 	@echo "  security      Scan secrets, dependencies, images, and runtime users"
 	@echo "  performance   Clean-build and benchmark the committed production stack"
+	@echo "  release-check Verify release docs, clean Git state, Compose, and model identity"
 	@echo "  data-manifest Record local raw-data checksums (requires RETRIEVED_AT=YYYY-MM-DD)"
 	@echo "  audit-data    Audit the complete local CIC-IDS2017 CSV dataset"
 	@echo "  preprocess-data  Build deterministic model-ready train/validation/test inputs"
@@ -37,6 +38,7 @@ help:
 	@echo "  gate-8        Run full tests, builds, smoke, and browser integration"
 	@echo "  gate-9        Run the complete security, privacy, and resilience gate"
 	@echo "  gate-10       Run security plus clean-build performance/reproducibility checks"
+	@echo "  gate-11       Run the complete MVP release-candidate gate"
 	@echo "  clean         Remove generated test and build output"
 
 setup:
@@ -63,6 +65,7 @@ lint:
 	python3 -B scripts/validate_phase8.py
 	python3 -B scripts/validate_phase9.py
 	python3 -B scripts/validate_phase10.py
+	python3 -B scripts/validate_phase11.py
 	uv run ruff check backend ml scripts
 	npm --prefix frontend run lint
 
@@ -182,6 +185,22 @@ gate-10:
 	python3 -B scripts/validate_phase10.py
 	$(MAKE) gate-9
 	$(MAKE) performance
+
+release-check:
+	python3 -B scripts/validate_phase11.py
+	docker compose --env-file .env.example config --quiet
+	uv run python -m scripts.verify_release --project-root "$(CURDIR)"
+
+gate-11:
+	$(MAKE) format-check
+	$(MAKE) lint
+	$(MAKE) typecheck
+	$(MAKE) test
+	$(MAKE) build
+	$(MAKE) security
+	$(MAKE) smoke
+	$(MAKE) test-e2e
+	$(MAKE) release-check
 
 clean:
 	rm -rf .cache .pytest_cache .ruff_cache .mypy_cache htmlcov frontend/dist frontend/coverage frontend/node_modules/.tmp reports/generated test-results playwright-report .playwright-mcp .taste-skill
